@@ -1,0 +1,214 @@
+#!/usr/bin/python3 -u
+
+"""
+infoscreen: dataloader for sidebar information
+
+ Copyright (C) 2018 Hendrik Hagendorn
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+import feedparser
+import json
+import lxml.html
+import os
+import pytz
+import requests
+import socket
+import time
+from calendar import timegm
+from datetime import datetime
+
+udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+met = pytz.timezone('Europe/Berlin')
+
+credentials_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'credentials.json')
+with open(credentials_path) as f:
+    credentials = json.load(f)
+    coord_lat = credentials['coordinates']['lat']
+    coord_lng = credentials['coordinates']['lng']
+    wunderground_api_key = credentials['wunderground']['api_key']
+
+def get_sz_breaking_news():
+    feed = feedparser.parse('http://rss.sueddeutsche.de/rss/Eilmeldungen')
+
+    news = []
+    for entry in feed['entries']:
+        news.append({
+            'title': entry['title'],
+            'published': time.strftime('%H:%M', entry['published_parsed']),
+            'today': entry['published_parsed'].tm_mday == datetime.today().day,
+            'relative': 'vor {}d'.format(datetime.today().day - entry['published_parsed'].tm_mday)
+        })
+
+    return news
+
+def get_wunderground_forecast_icon(forecast):
+    wunderground_mapping = {
+        'chanceflurries': 'rainy',
+        'chancerain': 'partlycloudy',
+        'chancesleet': 'rainy',
+        'chancesnow': 'snowing',
+        'chancetstorms': 'rainy',
+        'clear': 'sunny',
+        'cloudy': 'cloudy',
+        'flurries': 'rainy',
+        'fog': 'foggy',
+        'mostlycloudy': 'partlycloudy',
+        'mostlysunny': 'sunny',
+        'partlycloudy': 'partlycloudy',
+        'partlysunny': 'partlycloudy',
+        'sleet': 'rainy',
+        'rain': 'rainy',
+        'snow': 'snowing',
+        'sunny': 'sunny',
+        'tstorms': 'rainy',
+        'cloudy': 'cloudy'
+    }
+
+    icon = forecast['forecastday'][0]['icon']
+    if icon in wunderground_mapping:
+        return wunderground_mapping[icon]
+    else:
+        return 'sunny'
+
+def get_wetter24_forecast_icon(root):
+    wetter24_mapping = {
+        'sonnig': 'sunny',
+        'heiter': 'sunny',
+        'heiter, Regenschauer': 'partlycloudy',
+        'wolkig': 'partlycloudy',
+        'wolkig, leichter Sprühregen': 'partlycloudy',
+        'bedeckt': 'cloudy',
+        'bedeckt, leichter Sprühregen': 'cloudy',
+        'stark bewölkt': 'cloudy',
+        'stark bewölkt, gewittrig': 'rainy',
+        'stark bewölkt, Regenschauer': 'rainy',
+        'stark bewölkt, leichter Regen': 'rainy',
+        'stark bewölkt, starker Regen': 'rainy',
+        'bedeckt, leichter Regen': 'rainy',
+        'bedeckt, mäßiger Regen': 'rainy',
+        'bedeckt, Regenschauer': 'rainy',
+        'wolkig, Gewitter': 'rainy',
+        'wolkig, Regenschauer': 'rainy',
+        'regen': 'rainy',
+        'schnee': 'snowing',
+        'neblig': 'foggy'
+    }
+
+    icon = root.xpath('//img[@width="72" and @alt="symbol"]/@title')[0]
+    if icon in wetter24_mapping:
+        return wetter24_mapping[icon]
+    else:
+        return 'sunny'
+
+def get_sunrise_sunset():
+    result = requests.get('https://api.sunrise-sunset.org/json?lat={}&lng={}&date=today&formatted=0'.format(coord_lat, coord_lng)).json()['results']
+
+    sunrise = datetime.strptime(result['sunrise'][:-6], "%Y-%m-%dT%H:%M:%S")
+    epoch = time.mktime(sunrise.timetuple())
+    offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
+    sunrise = sunrise + offset
+
+    sunset = datetime.strptime(result['sunset'][:-6], "%Y-%m-%dT%H:%M:%S")
+    epoch = time.mktime(sunset.timetuple())
+    offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
+    sunset = sunset + offset
+    print(sunrise.strftime('%H:%M'))
+
+    return sunrise.strftime('%H:%M'), sunset.strftime('%H:%M')
+
+def get_wunderground():
+    forecast = requests.get('http://api.wunderground.com/api/{}/forecast/q/Germany/Munich.json'.format(wunderground_api_key)).json()['forecast']['simpleforecast']
+    conditions = requests.get('http://api.wunderground.com/api/{}/conditions/q/Germany/Munich.json'.format(wunderground_api_key)).json()['current_observation']
+
+    return {
+        't_current': '{} °C'.format(conditions['data']['temp_c']),
+        't_low': '{}°C'.format(forecast['data']['forecastday'][0]['low']['celsius']),
+        't_high': '{}°C'.format(forecast['data']['forecastday'][0]['high']['celsius']),
+        'icon': get_wunderground_forecast_icon(forecast)
+    }
+
+def get_wetter24():
+    html = requests.get('http://www.wetter24.de/vorhersage/deutschland/m%C3%BCnchen/18225562/').text
+    root = lxml.html.fromstring(html.encode('utf-8'))
+
+    return {
+        't_current': root.xpath('//li[@class="temp"]//span[@class="temp_val"]/text()')[0],
+        't_low': root.xpath('//td[starts-with(@class,"tempvn")]/text()')[0],
+        't_high': root.xpath('//td[starts-with(@class,"tempvx")]/text()')[0],
+        'icon': get_wetter24_forecast_icon(root)
+    }
+
+def current_time():
+    now = datetime.utcnow()
+    timestamp = timegm(now.timetuple()) + now.microsecond / 1000000.
+    now = now.replace(tzinfo=pytz.utc)
+    now = now.astimezone(met)
+    now = now.replace(tzinfo=None)
+    return now, timestamp
+
+def send_clock():
+    now, timestamp = current_time()
+    since_midnight = now - now.replace(hour=0, minute=0, second=0, microsecond=0)
+    since_midnight = since_midnight.seconds + since_midnight.microseconds / 1000000.
+    udp.sendto('infoscreen/clock/unix:{}'.format(timestamp).encode(), ('127.0.0.1', 4444))
+    udp.sendto('infoscreen/clock/midnight:{}'.format(since_midnight).encode(), ('127.0.0.1', 4444))
+
+def update():
+    try:
+        data = get_wetter24()
+        sunrise, sunset = get_sunrise_sunset()
+
+        udp.sendto('infoscreen/weather/icon:{}'.format(data['icon']).encode(), ('127.0.0.1', 4444))
+        udp.sendto('infoscreen/weather/temp_low:{}'.format(data['t_low']).encode(), ('127.0.0.1', 4444))
+        udp.sendto('infoscreen/weather/temp_high:{}'.format(data['t_high']).encode(), ('127.0.0.1', 4444))
+        udp.sendto('infoscreen/weather/temp_current:{}'.format(data['t_current']).encode(), ('127.0.0.1', 4444))
+        udp.sendto('infoscreen/weather/sunrise:{}'.format(sunrise).encode(), ('127.0.0.1', 4444))
+        udp.sendto('infoscreen/weather/sunset:{}'.format(sunset).encode(), ('127.0.0.1', 4444))
+    except:
+        print('fetching weather data failed.')
+
+def update_news():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect(('127.0.0.1', 4444))
+    s.recv(1000)
+    s.send('infoscreen\n'.encode())
+    s.recv(1000)
+
+    try:
+        news = get_sz_breaking_news()
+        s.send(json.dumps({'news': news}, ensure_ascii=False).encode('utf8'))
+        s.send('\n'.encode())
+    except:
+        pass
+    finally:
+        s.close()
+
+def main():
+    time.sleep(5)
+    send_clock()
+    while 1:
+        update()
+        update_news()
+        time.sleep(30)
+        send_clock()
+        for i in range(20):
+            time.sleep(30)
+            send_clock()
+            update_news()
+
+if __name__ == '__main__':
+    main()

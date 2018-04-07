@@ -1,0 +1,116 @@
+#!/usr/bin/python3 -u
+
+"""
+infoscreen: dataloader for public transport information
+
+ Copyright (C) 2018 Hendrik Hagendorn
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+import json
+import mvg_api
+import os
+import pytz
+import socket
+import sys
+import time
+from calendar import timegm
+from datetime import datetime
+
+udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+met = pytz.timezone('Europe/Berlin')
+
+credentials_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'credentials.json')
+with open(credentials_path) as f:
+    credentials = json.load(f)
+    mvg_api_key = credentials['mvg']['api_key']
+mvgapi = mvg_api.MVGAPI(api_key=mvg_api_key)
+
+def parse_departures():
+    departures = mvgapi.get_departures(470)
+    deps = []
+
+    for departure in departures:
+        deps.append(dict(
+            destination = departure.destination,
+            timestamp = int(departure.departure_time / 1000),
+            nice_date = datetime.fromtimestamp(departure.departure_time / 1000).strftime('%H:%M'),
+            product = departure.product,
+            label = departure.label,
+            line_background_color = departure.line_background_color,
+            icon = 'zug',
+        ))
+
+    return deps
+
+def parse_messages():
+    messages = mvgapi.get_messages(bus=False).messages
+    msgs = []
+
+    for message in messages:
+        if message.type != 'INCIDENT':
+            continue
+
+        for line in message.lines:
+            if line.line_number == 'U6':
+                msgs.append(message.title)
+                break
+
+    return msgs
+
+def get_json():
+    departures = parse_departures()
+    messages = parse_messages()
+
+    return json.dumps({'departures': departures, 'messages': messages}, ensure_ascii=False).encode('utf8')
+
+def current_time():
+    now = datetime.utcnow()
+    timestamp = timegm(now.timetuple()) + now.microsecond / 1000000.
+    now = now.replace(tzinfo=pytz.utc)
+    now = now.astimezone(met)
+    now = now.replace(tzinfo=None)
+    return now, timestamp
+
+def send_clock():
+    now, timestamp = current_time()
+    udp.sendto('departures/clock/set:{}'.format(timestamp).encode(), ('127.0.0.1', 4444))
+
+def update():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect(('127.0.0.1', 4444))
+    s.recv(1000)
+    s.send('departures\n'.encode())
+    s.recv(1000)
+    try:
+        data = get_json()
+        s.send(data)
+        s.send('\n'.encode())
+    except:
+        pass
+    finally:
+        s.close()
+
+def main():
+    time.sleep(5)
+    send_clock()
+    while 1:
+        update()
+        time.sleep(30)
+        send_clock()
+
+if __name__ == '__main__':
+    main()
