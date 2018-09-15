@@ -364,10 +364,41 @@ VNC = (function()
     }
 end)()
 
+OVERLAY = (function()
+    local oVisible = false
+    local oColor = "black"
+
+    local function visible()
+        return oVisible
+    end
+
+    local function color()
+        return oColor
+    end
+
+    util.data_mapper{
+        ["overlay/color"] = function(color)
+            print("overlay color: ", color)
+            oColor = color
+        end;
+        ["overlay/visible"] = function(visible)
+            print("overlay visible: ", visible)
+            oVisible = visible == "true"
+        end;
+    }
+
+    return {
+        visible = visible;
+        color = color;
+    }
+end)()
+
 function node.render()
     gl.clear(1, 1, 1, 1)
 
-    if VNC.visible() then
+    if OVERLAY.visible() then
+        resource.render_child(OVERLAY.color()):draw(0, 0, WIDTH, HEIGHT)
+    elseif VNC.visible() then
         util.draw_correct(VNC.session(), 0, 0, WIDTH, HEIGHT)
     else
         Sidebar.tick()
