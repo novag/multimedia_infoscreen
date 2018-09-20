@@ -229,7 +229,8 @@ Sidebar = (function()
     }
 
     local function draw_news()
-        local y = 510
+        local y = 500
+        local max_lines = 3
 
         for idx, entry in ipairs(data.news) do
             if idx > 3 then
@@ -240,11 +241,18 @@ Sidebar = (function()
             _G["font"]:write(15, y, entry.published, 30, 0, 0, 0, 1)
 
             for idx, line in ipairs(wrap(entry.title, 27)) do
-                if idx > 2 then
+                if idx > max_lines then
                     break
                 end
 
-                y = y + 40 * (idx - 1)
+                if idx == 3 then
+                    max_lines = 2
+                end
+
+                if idx > 1 then
+                    y = y + 40
+                end
+
                 if entry.today then
                     _G["font"]:write(15 + published_width + 15, y, line, 35, 0, 0, 0, 1)
                 else
@@ -296,7 +304,7 @@ Sidebar = (function()
             local hour, min = Time.walltime()
             local time = string.format("%d:%02d", hour, min)
             local time_width = _G["font"]:width(time, 100)
-            _G["font"]:write((SIDEBAR_WIDTH - time_width) / 2, HEIGHT - 220, time, 100, 0, 0, 0, 1)
+            _G["font"]:write((SIDEBAR_WIDTH - time_width) / 2, HEIGHT - 200, time, 100, 0, 0, 0, 1)
 
             -- sunrise / sunset
             util.draw_correct(_G["sunrise"], 15, HEIGHT - 84, 79, HEIGHT - 20, 1)
