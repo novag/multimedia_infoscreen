@@ -1,5 +1,7 @@
 **/__pycache__
 
 credentials.json
+
+int_*
 /run.sh
 /deploy.sh

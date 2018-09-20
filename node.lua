@@ -393,11 +393,34 @@ OVERLAY = (function()
     }
 end)()
 
+INT1 = (function()
+    local iVisible = false
+
+    local function visible()
+        return iVisible
+    end
+
+    util.data_mapper{
+        ["int_1/visible"] = function(visible)
+            print("int_1 visible: ", visible)
+            iVisible = visible == "true"
+        end;
+    }
+
+    return {
+        visible = visible;
+    }
+end)()
+
 function node.render()
     gl.clear(1, 1, 1, 1)
 
     if OVERLAY.visible() then
         resource.render_child(OVERLAY.color()):draw(0, 0, WIDTH, HEIGHT)
+    elseif INT1.visible() then
+        Sidebar.tick()
+
+        resource.render_child("int_1"):draw(10, 45, WIDTH - SIDEBAR_WIDTH, HEIGHT)
     elseif VNC.visible() then
         util.draw_correct(VNC.session(), 0, 0, WIDTH, HEIGHT)
     else
