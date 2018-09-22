@@ -401,7 +401,7 @@ OVERLAY = (function()
     }
 end)()
 
-INT1 = (function()
+SELECTOR = (function()
     local iVisible = false
 
     local function visible()
@@ -409,8 +409,8 @@ INT1 = (function()
     end
 
     util.data_mapper{
-        ["int_1/visible"] = function(visible)
-            print("int_1 visible: ", visible)
+        ["selector/visible"] = function(visible)
+            print("selector visible: ", visible)
             iVisible = visible == "true"
         end;
     }
@@ -420,17 +420,54 @@ INT1 = (function()
     }
 end)()
 
+VIDEO = (function()
+    local vVideo = nil
+    local vVisible = false
+
+    local function visible()
+        return vVisible
+    end
+
+    local function video()
+        return vVideo
+    end
+
+    util.data_mapper{
+        ["video/file"] = function(file)
+            print("video file: ", file)
+            vVideo = resource.load_video{
+                file = file;
+                audio = true;
+            }
+        end;
+
+        ["video/visible"] = function(visible)
+            print("video visible: ", visible)
+            vVisible = visible == "true"
+        end;
+    }
+
+    return {
+        visible = visible;
+        video = video;
+    }
+end)()
+
 function node.render()
     gl.clear(1, 1, 1, 1)
 
     if OVERLAY.visible() then
         resource.render_child(OVERLAY.color()):draw(0, 0, WIDTH, HEIGHT)
-    elseif INT1.visible() then
+    elseif SELECTOR.visible() then
         Sidebar.tick()
 
-        resource.render_child("int_1"):draw(10, 45, WIDTH - SIDEBAR_WIDTH, HEIGHT)
+        resource.render_child("selector"):draw(10, 45, WIDTH - SIDEBAR_WIDTH, HEIGHT)
     elseif VNC.visible() then
         util.draw_correct(VNC.session(), 0, 0, WIDTH, HEIGHT)
+    elseif VIDEO.visible() then
+        Sidebar.tick()
+
+        util.draw_correct(VIDEO.video(), 0, 0, WIDTH - SIDEBAR_WIDTH, HEIGHT)
     else
         Sidebar.tick()
 
