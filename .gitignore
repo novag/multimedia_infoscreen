@@ -2,6 +2,6 @@
 
 credentials.json
 
-int_*
+xint_*
 /run.sh
 /deploy.sh

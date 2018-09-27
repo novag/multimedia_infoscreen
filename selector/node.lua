@@ -38,6 +38,7 @@ util.data_mapper{
     ["selection"] = function(selection)
         selection_id = tonumber(selection)
         N.selection_id = selection_id
+        schedule.update()
     end;
 
     ["update"] = function()
@@ -78,9 +79,9 @@ function draw_entries(msg_y)
 
     for idx, entry in ipairs(data.entries) do
         if idx == selection_id then
-            title = "› " .. entry.name
+            title = "› " .. entry.title
         else
-            title = entry.name
+            title = entry.title
         end
 
         util.draw_correct(_G[entry.picon], 10, y + 10, 140, y + FSIZE_ENTRY, 0.9)

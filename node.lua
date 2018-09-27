@@ -457,7 +457,7 @@ function node.render()
     gl.clear(1, 1, 1, 1)
 
     if OVERLAY.visible() then
-        resource.render_child(OVERLAY.color()):draw(0, 0, WIDTH, HEIGHT)
+        gl.clear(0, 0, 0, 1)
     elseif SELECTOR.visible() then
         Sidebar.tick()
 

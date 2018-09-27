@@ -1,0 +1,147 @@
+#!/usr/bin/python3 -u
+# -*- coding: utf-8 -*-
+
+"""
+multimedia: play/change/stop sport stream on button event
+
+ Copyright (C) 2018 Hendrik Hagendorn
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+import json
+import os
+import signal
+import sys
+import time
+from modules import registry, utils
+from modules import *
+from RPi import GPIO
+
+
+PIN = 16
+
+class Dispatcher():
+    def __init__(self):
+        self.selection_id = None
+        self.module = None
+        self.ignore_callback = False
+
+    def init(self):
+        signal.signal(signal.SIGTERM, self.sigterm_handler)
+        signal.signal(signal.SIGINT, self.sigterm_handler)
+        signal.signal(signal.SIGUSR1, self.sigusr1_handler)
+        signal.signal(signal.SIGUSR2, self.sigusr2_handler)
+
+        GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.add_event_detect(PIN, GPIO.RISING, callback=self.button_callback, bouncetime=200)
+
+        for meta in registry.get_all_metadata():
+            utils.download_file(meta['picon'], meta['picon_url'])
+
+        for module in registry.get_all_modules():
+            module.reload_epg()
+
+    def run(self):
+        while True:
+            signal.pause()
+
+    def reset(self):
+        self.selection_id = None
+        self.module = None
+
+    def short_press(self):
+        print('short press.')
+
+        if self.module:
+            self.module.handle_short_press()
+        elif self.selection_id == None:
+            if registry.get_length() == 1:
+                self.module = registry.get_all_modules()[0]
+                self.module.handle_short_press()
+            else:
+                self.selection_id = 0
+                utils.ib_update_selection(self.selection_id)
+                utils.ib_update_selector(registry.get_all_metadata())
+                utils.ib_notify('infoscreen/selector/visible', 'true')
+        else:
+            self.selection_id = (self.selection_id + 1) % registry.get_length()
+            utils.ib_update_selection(self.selection_id)
+
+    def long_press(self):
+        print('long press.')
+
+        if self.module:
+            self.module.handle_long_press()
+        elif self.selection_id != None:
+            self.module = registry.get_all_modules()[self.selection_id]
+            self.selection_id = None
+            self.module.handle_short_press()
+
+    def button_callback(self, channel):
+        if self.ignore_callback:
+            print('ignore callback')
+            return
+
+        time.sleep(0.005)
+        if GPIO.input(channel) == GPIO.LOW:
+            print('level less than 5 ms')
+            return
+
+        if not registry.ready():
+            print('modules not ready')
+            return
+
+        print('button pressed.')
+        time.sleep(0.2)
+        if GPIO.input(channel) == GPIO.LOW:
+            self.short_press()
+        else:
+            time.sleep(0.2)
+            if GPIO.input(channel) == GPIO.LOW:
+                self.short_press()
+            else:
+                self.ignore_callback = True # removing and readding the callback segfaults every now and then
+                time.sleep(0.35)
+                if GPIO.input(channel) == GPIO.HIGH:
+                    self.long_press()
+                    time.sleep(1)
+                self.ignore_callback = False
+
+    def sigterm_handler(self, signal, frame):
+        if self.module:
+            self.module.terminate()
+
+        GPIO.cleanup()
+        print('bye.')
+        sys.exit(0)
+
+    def sigusr1_handler(self, signal, frame):
+        print("usr1")
+
+        if self.module:
+            self.module.terminate()
+
+    def sigusr2_handler(self, signal, frame):
+        print("usr2")
+        for self.module in registry.get_all_modules():
+            self.module.reload_epg()
+
+if __name__ == '__main__':
+    dispatcher = Dispatcher()
+    registry.register_dispatcher(dispatcher)
+    dispatcher.init()
+    dispatcher.run()
