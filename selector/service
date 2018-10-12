@@ -137,8 +137,8 @@ class Dispatcher():
 
     def sigusr2_handler(self, signal, frame):
         print("usr2")
-        for self.module in registry.get_all_modules():
-            self.module.reload_epg()
+        for module in registry.get_all_modules():
+            module.reload_epg()
 
 if __name__ == '__main__':
     dispatcher = Dispatcher()

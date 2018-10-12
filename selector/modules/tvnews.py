@@ -214,7 +214,6 @@ class DataLoader():
             if program['provider'] == 'ard':
                 entry = self.fetch_ard(program)
             else:
-                continue
                 entry = self.fetch_zdf(program)
 
             print(entry)
