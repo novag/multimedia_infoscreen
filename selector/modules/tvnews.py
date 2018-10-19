@@ -190,7 +190,8 @@ class DataLoader():
             return None
         data = res.json()
 
-        hjo_url = data['mainVideoContent']['http://zdf.de/rels/target']['http://zdf.de/rels/streams/ptmd']
+        hjo_url = data['mainVideoContent']['http://zdf.de/rels/target']['http://zdf.de/rels/streams/ptmd-template']
+        hjo_url = hjo_url.replace('{playerId}', 'ngplayer_2_3')
         published = data['editorialDate']
 
         res = requests.get('https://api.zdf.de{}'.format(hjo_url), headers=headers)
