@@ -96,26 +96,39 @@ class TVNews():
 
         utils.ib_update_selector(entries)
 
-    def handle_short_press(self):
-        print('short press.')
+    def init(self):
+        print('tvnews: init.')
+
+        self.update()
+        utils.ib_notify('infoscreen/selector/visible', 'true')
+
+    def up(self):
+        print('tvnews: up.')
 
         if streamer.is_playing():
             streamer.stop()
-        elif self.selection_id == None:
-            self.update()
+        else:
+            self.selection_id = (self.selection_id - 1) % self.entries_length
+            utils.ib_update_selection(self.selection_id)
 
-            utils.ib_notify('infoscreen/selector/visible', 'true')
+    def down(self):
+        print('tvnews: down.')
+
+        if streamer.is_playing():
+            streamer.stop()
         else:
             self.selection_id = (self.selection_id + 1) % self.entries_length
             utils.ib_update_selection(self.selection_id)
 
-    def handle_long_press(self):
-        print('long press.')
+    def select(self):
+        print('tvnews: select.')
 
-        if not streamer.is_playing() and self.selection_id != None:
+        if streamer.is_playing():
+            streamer.stop()
+        elif self.selection_id != None:
             streamer.play(self.epg_data[self.selection_id]['video'], self.stream_finished, True)
 
-    def reload_epg(self):
+    def refresh(self):
         for program in PROGRAMS:
             utils.download_file(program['short'], program['picon'])
 

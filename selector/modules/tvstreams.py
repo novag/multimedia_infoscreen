@@ -65,26 +65,39 @@ class TVStreams():
 
         utils.ib_update_selector(self.entries)
 
-    def handle_short_press(self):
-        print('short press.')
+    def init(self):
+        print('tvstreams: init.')
+
+        self.update()
+        utils.ib_notify('infoscreen/selector/visible', 'true')
+
+    def up(self):
+        print('tvstreams: up.')
 
         if streamer.is_playing():
             streamer.stop()
-        elif self.selection_id == None:
-            self.update()
+        else:
+            self.selection_id = (self.selection_id - 1) % len(self.entries)
+            utils.ib_update_selection(self.selection_id)
 
-            utils.ib_notify('infoscreen/selector/visible', 'true')
+    def down(self):
+        print('tvstreams: down.')
+
+        if streamer.is_playing():
+            streamer.stop()
         else:
             self.selection_id = (self.selection_id + 1) % len(self.entries)
             utils.ib_update_selection(self.selection_id)
 
-    def handle_long_press(self):
-        print('long press.')
+    def select(self):
+        print('tvstreams: select.')
 
-        if not streamer.is_playing() and self.selection_id != None:
+        if streamer.is_playing():
+            streamer.stop()
+        elif self.selection_id != None:
             streamer.play(CHANNELS[self.selection_id]['stream'], self.stream_finished)
 
-    def reload_epg(self):
+    def refresh(self):
         for channel in CHANNELS:
             utils.download_file(channel['short'], channel['picon'])
 
