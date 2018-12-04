@@ -22,6 +22,7 @@ json = require "json"
 util.auto_loader(_G)
 
 local FSIZE_MESSAGE = 45
+local FSIZE_ENTRY_SMALL = 35
 local FSIZE_ENTRY = 60
 local FSIZE_ENTRY_LARGE = 70
 
@@ -87,8 +88,13 @@ function draw_entries(msg_y)
         util.draw_correct(_G[entry.picon], 10, y + 10, 140, y + FSIZE_ENTRY, 0.9)
         font:write(150, y, title, FSIZE_ENTRY_LARGE, 0, 0, 0, 1)
         y = y + FSIZE_ENTRY_LARGE + 5
-        font:write(150, y, entry.subtitle, FSIZE_ENTRY, 0, 0, 0, 1)
-        y = y + FSIZE_ENTRY_LARGE + 5
+        if entry.subsize ~= nil and entry.subsize == "small" then
+            font:write(150, y, entry.subtitle, FSIZE_ENTRY_SMALL, 0, 0, 0, 1)
+            y = y + FSIZE_ENTRY_SMALL + 5
+        else
+            font:write(150, y, entry.subtitle, FSIZE_ENTRY, 0, 0, 0, 1)
+            y = y + FSIZE_ENTRY_LARGE + 5
+        end
 
         if y > HEIGHT - 60 then
             break
