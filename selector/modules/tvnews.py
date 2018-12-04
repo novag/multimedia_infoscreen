@@ -158,7 +158,7 @@ class DataLoader():
         if not res.ok:
             return None
 
-        video_url = res.json()['_mediaArray'][-1]['_mediaStreamArray'][-1]['_stream'][-1]
+        video_url = res.json()['_mediaArray'][-1]['_mediaStreamArray'][-1]['_stream']
         published = feed['entries'][0]['published']
 
         return {
