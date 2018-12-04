@@ -31,7 +31,7 @@ import threading
 import time
 from RPi import GPIO
 
-stations = [
+STATIONS = [
     {
         'name': '95.5 Charivari',
         'short': 'charivari',
@@ -78,117 +78,157 @@ stations = [
 
 PIN = 15
 
-udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-station = 0
-process = None
+class Radio():
+    SOCKET_ADDR = '/tmp/radio.ctrl'
 
-def sigterm_handler(signal, frame):
-    stop_station()
-    GPIO.cleanup()
-    print('bye.')
-    sys.exit(0)
+    def __init__(self):
+        self.station = 0
+        self.process = None
 
-def sigusr1_handler(signal, frame):
-    print("usr1")
-    stop_station()
+    def init(self):
+        signal.signal(signal.SIGTERM, self.sigterm_handler)
+        signal.signal(signal.SIGINT, self.sigterm_handler)
+        signal.signal(signal.SIGUSR1, self.sigusr1_handler)
+        signal.signal(signal.SIGUSR2, self.sigusr2_handler)
 
-def sigusr2_handler(signal, frame):
-    print("usr2")
-    play_station(stations[0])
+        GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.add_event_detect(PIN, GPIO.RISING, callback=self.button_callback, bouncetime=200)
 
-signal.signal(signal.SIGTERM, sigterm_handler)
-signal.signal(signal.SIGINT, sigterm_handler)
-signal.signal(signal.SIGUSR1, sigusr1_handler)
-signal.signal(signal.SIGUSR2, sigusr2_handler)
+    def run(self):
+        try:
+            os.unlink(self.SOCKET_ADDR)
+        except OSError:
+            if os.path.exists(self.SOCKET_ADDR):
+                raise
 
-def process_output(process, station):
-    while True:
-        line = process.stderr.readline().decode('utf8')
-        if line == '' and process.poll() != None:
-            break
-        if line != '':
-            res = re.search(station['format'], line, re.M|re.I)
-            if res:
-                artist = res.group(1)
-                title = res.group(2)
-                udp.sendto('infoscreen/music/title:{}'.format(title).encode(), ('127.0.0.1', 4444))
-                udp.sendto('infoscreen/music/artists:{}'.format(artist).encode(), ('127.0.0.1', 4444))
-                udp.sendto('infoscreen/music/image:{}'.format(station['short']).encode(), ('127.0.0.1', 4444))
-                udp.sendto('infoscreen/music/playing:true'.encode(), ('127.0.0.1', 4444))
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.bind(self.SOCKET_ADDR)
+        sock.listen(1)
 
-def play_station(station):
-    global process
-    print('playing ' + station['name'])
+        while True:
+            connection, client_address = sock.accept()
+            try:
+                cmd = connection.recv(1)
+                if cmd == b'n': # next
+                    self.next()
+                elif cmd == b'p': # previous
+                    self.previous()
+                elif cmd == b's': # stop
+                    self.stop()
+            finally:
+                connection.close()
 
-    if process:
-        process.terminate()
-        process.wait()
+    def ib_notify(self, path, data=''):
+        udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp.sendto('{}:{}'.format(path, data).encode(), ('127.0.0.1', 4444))
 
-    path = '{}/{}.jpeg'.format(os.path.dirname(os.path.realpath(__file__)), station['short'])
-    if not os.path.isfile(path):
-        res = requests.get(station['image'], stream=True)
-        if res.status_code == 200:
-            with open(path, 'wb') as f:
-                for chunk in res:
-                    f.write(chunk)
+    def process_output(self, process, station):
+        while True:
+            line = self.process.stderr.readline().decode('utf8')
+            if line == '' and self.process.poll() != None:
+                break
+            if line != '':
+                res = re.search(station['format'], line, re.M|re.I)
+                if res:
+                    artist = res.group(1)
+                    title = res.group(2)
+                    print('title:' + title)
+                    self.ib_notify('infoscreen/music/title', title)
+                    self.ib_notify('infoscreen/music/artists', artist)
+                    self.ib_notify('infoscreen/music/image', station['short'])
+                    self.ib_notify('infoscreen/music/playing', 'true')
 
-    udp.sendto('infoscreen/music/title:{}'.format(station['name']).encode(), ('127.0.0.1', 4444))
-    udp.sendto('infoscreen/music/artists:'.encode(), ('127.0.0.1', 4444))
-    udp.sendto('infoscreen/music/image:{}'.format(station['short']).encode(), ('127.0.0.1', 4444))
-    udp.sendto('infoscreen/music/playing:true'.encode(), ('127.0.0.1', 4444))
+    def play(self, station):
+        print('wgis_radio: play ' + station['name'])
 
-    process = subprocess.Popen(['mpg123', station['stream']], stderr=subprocess.PIPE)
-    threading.Thread(target=process_output, args=(process, station,)).start()
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
 
-def stop_station():
-    if process:
-        process.terminate()
-        process.wait()
+        path = '{}/{}.jpeg'.format(os.path.dirname(os.path.realpath(__file__)), station['short'])
+        if not os.path.isfile(path):
+            res = requests.get(station['image'], stream=True)
+            if res.status_code == 200:
+                with open(path, 'wb') as f:
+                    for chunk in res:
+                        f.write(chunk)
 
-    udp.sendto('infoscreen/music/playing:false'.encode(), ('127.0.0.1', 4444))
-    print('stopped ' + stations[station]['name'])
+        self.ib_notify('infoscreen/music/title', station['name'])
+        self.ib_notify('infoscreen/music/artists')
+        self.ib_notify('infoscreen/music/image', station['short'])
+        self.ib_notify('infoscreen/music/playing', 'true')
 
-def change_station():
-    global station
+        self.process = subprocess.Popen(['mpg123', station['stream']], stderr=subprocess.PIPE)
+        threading.Thread(target=self.process_output, args=(self.process, station,)).start()
 
-    print('change station.')
-    station = (station + 1) % len(stations)
-    play_station(stations[station])
+    def stop(self):
+        print('wgis_radio: stop ' + STATIONS[self.station]['name'])
 
-def button_callback(channel):
-    global station
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
 
-    time.sleep(0.005)
-    if GPIO.input(channel) == GPIO.LOW:
-        print('level less than 5 ms')
-        return
+        self.ib_notify('infoscreen/music/playing', 'false')
 
-    print('button pressed.')
-    if not process or process.poll() != None:
-        print('play station.')
-        station = 0
-        play_station(stations[station])
-    else:
-        time.sleep(0.2)
+    def previous(self):
+        print('wgis_radio: previous station.')
+
+        self.station = (self.station - 1) % len(STATIONS)
+        self.play(STATIONS[self.station])
+
+    def next(self):
+        print('wgis_radio: next station.')
+
+        self.station = (self.station + 1) % len(STATIONS)
+        self.play(STATIONS[self.station])
+
+    def button_callback(self, channel):
+        time.sleep(0.005)
         if GPIO.input(channel) == GPIO.LOW:
-            change_station()
+            print('level less than 5 ms')
+            return
+
+        print('button pressed.')
+        if not self.process or self.process.poll() != None:
+            print('play station.')
+            self.station = 0
+            self.play(STATIONS[self.station])
         else:
             time.sleep(0.2)
             if GPIO.input(channel) == GPIO.LOW:
-                change_station()
+                self.next()
             else:
-                GPIO.remove_event_detect(channel)
-                time.sleep(0.35)
-                if GPIO.input(channel) == GPIO.HIGH:
-                    print('stop station.')
-                    stop_station()
-                    time.sleep(2)
-                GPIO.add_event_detect(PIN, GPIO.RISING, callback=button_callback, bouncetime=200)
+                time.sleep(0.2)
+                if GPIO.input(channel) == GPIO.LOW:
+                    self.next()
+                else:
+                    GPIO.remove_event_detect(channel)
+                    time.sleep(0.35)
+                    if GPIO.input(channel) == GPIO.HIGH:
+                        self.stop()
+                        time.sleep(2)
+                    GPIO.add_event_detect(PIN, GPIO.RISING, callback=self.button_callback, bouncetime=200)
 
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.add_event_detect(PIN, GPIO.RISING, callback=button_callback, bouncetime=200)
+    def sigterm_handler(self, signal, frame):
+        print('bye.')
 
-while True:
-    signal.pause()
+        self.stop()
+        GPIO.cleanup()
+        sys.exit(0)
+
+    def sigusr1_handler(signal, frame):
+        print("usr1")
+
+        self.stop()
+
+    def sigusr2_handler(signal, frame):
+        print("usr2")
+
+        self.play(STATIONS[0])
+
+if __name__ == '__main__':
+    radio = Radio()
+    radio.init()
+    radio.run()
