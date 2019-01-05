@@ -105,6 +105,7 @@ class Radio():
 
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.bind(self.SOCKET_ADDR)
+        os.chmod(self.SOCKET_ADDR, 0o666)
         sock.listen(1)
 
         while True:

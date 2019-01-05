@@ -67,18 +67,40 @@ class Dispatcher():
 
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.bind(self.SOCKET_ADDR)
+        os.chmod(self.SOCKET_ADDR, 0o666)
         sock.listen(1)
 
         while True:
             connection, client_address = sock.accept()
             try:
-                cmd = connection.recv(1)
-                if cmd == b'u': # up
+                cmd = connection.recv(38).decode("utf-8")
+                if cmd == 'get modules':
+                    modules = self.get_modules()
+                    connection.sendall(json.dumps(modules).encode())
+                elif cmd.startswith('get entries '):
+                    entries = self.get_module_entries(cmd[4:])
+                    connection.sendall(json.dumps(entries).encode())
+                elif cmd == 'get entries':
+                    entries = self.module.get_entries()
+                    connection.sendall(json.dumps(entries).encode())
+                elif cmd == 'up':
                     self.up()
-                elif cmd == b'd': # down
+                elif cmd == 'down':
                     self.down()
-                elif cmd == b's': # select
+                elif cmd == 'select':
                     self.select()
+                elif cmd.startswith('select module '):
+                    selection_id = self.get_module_index(cmd[14:])
+                    if selection_id != None:
+                        self.module = None
+                        self.selection_id = selection_id
+                        self.select()
+                elif cmd.startswith('select entry '):
+                    self.selection_id = int(cmd[13:])
+                    utils.ib_update_selection(self.selection_id)
+                    self.select()
+                elif cmd == 'exit':
+                    self.exit()
             finally:
                 connection.close()
 
@@ -95,6 +117,33 @@ class Dispatcher():
             utils.ib_update_selection(self.selection_id)
             utils.ib_update_selector(registry.get_all_metadata())
             utils.ib_notify('infoscreen/selector/visible', 'true')
+
+    def get_modules(self):
+        modules = []
+
+        for metadata in registry.get_all_metadata():
+            modules.append({
+                'title': metadata['title'],
+                'id': metadata['id']
+            })
+
+        return modules
+
+    def get_module_index(self, module_id):
+        for idx, metadata in enumerate(registry.get_all_metadata()):
+            if metadata['id'] == module_id:
+                return idx
+
+        return None
+
+    def get_module_entries(self, module_id):
+        module = None
+
+        for idx, metadata in enumerate(registry.get_all_metadata()):
+            if metadata['id'] == module_id:
+                module = registry.get_all_modules()[idx]
+
+        return module.get_entries()
 
     def up(self):
         print('up.')
@@ -127,6 +176,12 @@ class Dispatcher():
             self.module = registry.get_all_modules()[self.selection_id]
             self.selection_id = None
             self.module.init()
+
+    def exit(self):
+        print('exit.')
+
+        if self.module:
+            self.module.exit()
 
     def short_press(self):
         print('short press.')

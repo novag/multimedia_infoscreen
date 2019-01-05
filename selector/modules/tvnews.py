@@ -102,6 +102,16 @@ class TVNews():
         self.update()
         utils.ib_notify('infoscreen/selector/visible', 'true')
 
+    def get_entries(self):
+        entries = []
+
+        for epg_program in self.epg_data:
+            program = PROGRAMS[epg_program['program_id']]
+
+            entries.append(program['name'])
+
+        return entries
+
     def up(self):
         print('tvnews: up.')
 
@@ -127,6 +137,13 @@ class TVNews():
             streamer.stop()
         elif self.selection_id != None:
             streamer.play(self.epg_data[self.selection_id]['video'], self.stream_finished, True)
+
+    def exit(self):
+        print('tvnews: exit.')
+
+        if streamer.is_playing():
+            streamer.stop()
+            self.stream_finished()
 
     def refresh(self):
         for program in PROGRAMS:
@@ -249,6 +266,7 @@ else:
     from . import registry, streamer, utils
 
     registry.register(TVNews(), {
+        'id': 'tvnews',
         'title': 'Nachrichten',
         'subtitle': '',
         'picon': 'tvnews',

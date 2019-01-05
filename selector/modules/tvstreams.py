@@ -71,6 +71,14 @@ class TVStreams():
         self.update()
         utils.ib_notify('infoscreen/selector/visible', 'true')
 
+    def get_entries(self):
+        entries = []
+
+        for channel in CHANNELS:
+            entries.append(channel['name'])
+
+        return entries
+
     def up(self):
         print('tvstreams: up.')
 
@@ -97,6 +105,13 @@ class TVStreams():
         elif self.selection_id != None:
             streamer.play(CHANNELS[self.selection_id]['stream'], self.stream_finished)
 
+    def exit(self):
+        print('tvnews: exit.')
+
+        if streamer.is_playing():
+            streamer.stop()
+            self.stream_finished()
+
     def refresh(self):
         for channel in CHANNELS:
             utils.download_file(channel['short'], channel['picon'])
@@ -117,6 +132,7 @@ if __name__ != '__main__':
     from . import registry, streamer, utils
 
     registry.register(TVStreams(), {
+        'id': 'tvstreams',
         'title': 'Live TV',
         'subtitle': '',
         'picon': 'tvstreams',
