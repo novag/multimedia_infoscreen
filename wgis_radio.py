@@ -49,7 +49,7 @@ STATIONS = [
     {
         'name': 'top100station',
         'short': 'top100station',
-        'stream': 'http://87.230.103.76/',
+        'stream': 'http://195.201.81.101/top100station.mp3',
         'image': 'https://top100station.de/wp-content/uploads/2018/06/cropped-logo_hd.png',
         'format': r"StreamTitle='(.*) - (.*?)';"
     },
