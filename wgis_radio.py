@@ -111,12 +111,14 @@ class Radio():
         while True:
             connection, client_address = sock.accept()
             try:
-                cmd = connection.recv(1)
-                if cmd == b'n': # next
+                cmd = connection.recv(8).decode('utf-8')
+                if cmd == 'play':
+                    self.play(self.station)
+                elif cmd == 'next':
                     self.next()
-                elif cmd == b'p': # previous
+                elif cmd == 'previous':
                     self.previous()
-                elif cmd == b's': # stop
+                elif cmd == 'stop' or cmd == 'pause':
                     self.stop()
             finally:
                 connection.close()
