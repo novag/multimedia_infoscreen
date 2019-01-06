@@ -240,7 +240,7 @@ class Dispatcher():
     def sigusr2_handler(self, signal, frame):
         print("usr2")
         for module in registry.get_all_modules():
-            module.reload_epg()
+            module.refresh()
 
 if __name__ == '__main__':
     dispatcher = Dispatcher()
