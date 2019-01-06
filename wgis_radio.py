@@ -221,12 +221,12 @@ class Radio():
         GPIO.cleanup()
         sys.exit(0)
 
-    def sigusr1_handler(signal, frame):
+    def sigusr1_handler(self, signal, frame):
         print("usr1")
 
         self.stop()
 
-    def sigusr2_handler(signal, frame):
+    def sigusr2_handler(self, signal, frame):
         print("usr2")
 
         self.play(STATIONS[0])
