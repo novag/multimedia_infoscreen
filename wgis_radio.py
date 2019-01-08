@@ -112,8 +112,10 @@ class Radio():
             connection, client_address = sock.accept()
             try:
                 cmd = connection.recv(8).decode('utf-8')
-                if cmd == 'play':
-                    self.play(self.station)
+                if cmd == 'push':
+                    self.push()
+                elif cmd == 'play':
+                    self.play(STATIONS[self.station])
                 elif cmd == 'next':
                     self.next()
                 elif cmd == 'previous':
@@ -142,6 +144,12 @@ class Radio():
                     self.ib_notify('infoscreen/music/artists', artist)
                     self.ib_notify('infoscreen/music/image', station['short'])
                     self.ib_notify('infoscreen/music/playing', 'true')
+
+    def push(self):
+        if not self.process or self.process.poll() != None:
+            self.play(STATIONS[self.station])
+        else:
+            self.next()
 
     def play(self, station):
         print('wgis_radio: play ' + station['name'])
