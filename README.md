@@ -10,7 +10,7 @@ These instructions will hopefully get you a copy of the project up and running o
 
 1. Obtain a MVG API key (e.g. look at the Android app)
 2. Create a Spotify application and obtain the client id and client secret
-3. Rename credentials.json.example to credentials.json
+3. Rename config.json.example to config.json
 4. Connect a simple push button to pin 15 on the Raspberry Pi
 5. Add or remove radio stations in `wgis_radio.py`.
 

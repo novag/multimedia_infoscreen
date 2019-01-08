@@ -30,11 +30,11 @@ from systemd import journal
 
 udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-credentials_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'credentials.json')
-with open(credentials_path) as f:
-    credentials = json.load(f)
-    spotify_client_id = credentials['spotify']['client_id']
-    spotify_client_secret = credentials['spotify']['client_secret']
+config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
+with open(config_path) as f:
+    config = json.load(f)
+    spotify_client_id = config['spotify']['client_id']
+    spotify_client_secret = config['spotify']['client_secret']
     spotify_b64_auth = base64.b64encode('{}:{}'.format(spotify_client_id, spotify_client_secret).encode()).decode("utf-8")
 
 event = os.environ['PLAYER_EVENT']

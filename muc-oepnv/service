@@ -33,10 +33,10 @@ udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 met = pytz.timezone('Europe/Berlin')
 
-credentials_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'credentials.json')
-with open(credentials_path) as f:
-    credentials = json.load(f)
-    mvg_api_key = credentials['mvg']['api_key']
+config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'config.json')
+with open(config_path) as f:
+    config = json.load(f)
+    mvg_api_key = config['mvg']['api_key']
 mvgapi = mvg_api.MVGAPI(api_key=mvg_api_key)
 
 def parse_departures():
