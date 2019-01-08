@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
 import signal
+import socket
 import subprocess
 import threading
 from . import utils
@@ -45,6 +46,16 @@ class OutputProcessorThread(threading.Thread):
 process = None
 output_thread = None
 
+def stop_radio():
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        sock.connect('/tmp/radio.ctrl')
+    except socket.error as msg:
+        print(msg)
+
+    sock.sendall(b'stop')
+    sock.close()
+
 def is_playing():
     return process and process.poll() == None
 
@@ -65,7 +76,7 @@ def play(url, callback=None, fit=False):
     print('streamer: play: ' + url)
     stop()
 
-    os.system('killall -SIGUSR1 wgis_radio.py')
+    stop_radio()
 
     if fit:
         process = subprocess.Popen(['omxplayer', '-b', '-o', 'alsa:hw:1,0', '--win', '0,530,880,1025', url], stderr=subprocess.PIPE, preexec_fn=os.setsid)
