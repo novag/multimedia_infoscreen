@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 _dispatcher = None
+_selector = None
 _modules = []
 _metadata = []
 _ready_count = 0
@@ -29,6 +30,11 @@ def register_dispatcher(d):
     global _dispatcher
 
     _dispatcher = d
+
+def register_selector(s):
+    global _selector
+
+    _selector = s
 
 def register(module, meta):
     _modules.append(module)
@@ -44,6 +50,9 @@ def ready():
 
 def module_finished():
     _dispatcher.reset()
+
+def get_selector():
+    return _selector
 
 def get_all_modules():
     return _modules

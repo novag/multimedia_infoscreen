@@ -79,9 +79,22 @@ def play(url, callback=None, fit=False):
     stop_radio()
 
     if fit:
-        process = subprocess.Popen(['omxplayer', '-b', '-o', 'alsa:hw:1,0', '--win', '0,530,880,1025', url], stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        process = subprocess.Popen([
+            'omxplayer',
+            '--timeout', '20',
+            '-b',
+            '-o', 'alsa:hw:1,0',
+            '--win', '0,530,880,1025',
+            url
+        ], stderr=subprocess.PIPE, preexec_fn=os.setsid)
     else:
-        process = subprocess.Popen(['omxplayer', '-b', '-o', 'alsa:hw:1,0', url], stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        process = subprocess.Popen([
+            'omxplayer',
+            '--timeout', '20',
+            '-b',
+            '-o', 'alsa:hw:1,0',
+            url
+        ], stderr=subprocess.PIPE, preexec_fn=os.setsid)
         utils.ib_notify('infoscreen/overlay/visible', 'true')
 
     output_thread = OutputProcessorThread(process, callback)

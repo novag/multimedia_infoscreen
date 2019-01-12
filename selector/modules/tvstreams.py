@@ -75,42 +75,39 @@ class TVStreams():
         entries = []
 
         for channel in CHANNELS:
-            entries.append(channel['name'])
+            entries.append({
+                'id': channel['short'],
+                'title': channel['name']
+            })
 
         return entries
 
     def up(self):
         print('tvstreams: up.')
 
-        if streamer.is_playing():
-            streamer.stop()
-        else:
-            self.selection_id = (self.selection_id - 1) % len(self.entries)
-            utils.ib_update_selection(self.selection_id)
+        self.selection_id = (self.selection_id - 1) % len(self.entries)
+        utils.ib_update_selection(self.selection_id)
 
     def down(self):
         print('tvstreams: down.')
 
-        if streamer.is_playing():
-            streamer.stop()
-        else:
-            self.selection_id = (self.selection_id + 1) % len(self.entries)
-            utils.ib_update_selection(self.selection_id)
+        self.selection_id = (self.selection_id + 1) % len(self.entries)
+        utils.ib_update_selection(self.selection_id)
 
-    def select(self):
+    def select(self, selection_id=None):
         print('tvstreams: select.')
 
-        if streamer.is_playing():
-            streamer.stop()
-        elif self.selection_id != None:
-            streamer.play(CHANNELS[self.selection_id]['stream'], self.stream_finished)
+        if not selection_id:
+            selection_id = self.selection_id
+
+        streamer.play(CHANNELS[selection_id]['stream'], self.stream_finished)
 
     def exit(self):
         print('tvnews: exit.')
 
         if streamer.is_playing():
             streamer.stop()
-            self.stream_finished()
+        self.stream_finished()
 
     def refresh(self):
         for channel in CHANNELS:

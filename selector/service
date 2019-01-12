@@ -28,29 +28,19 @@ import sys
 import time
 from modules import registry, utils
 from modules import *
-from RPi import GPIO
 
-
-PIN = 16
 
 class Dispatcher():
     SOCKET_ADDR = '/tmp/selector.ctrl'
 
     def __init__(self):
-        self.selection_id = None
         self.module = None
-        self.ignore_callback = False
 
     def init(self):
         signal.signal(signal.SIGTERM, self.sigterm_handler)
         signal.signal(signal.SIGINT, self.sigterm_handler)
         signal.signal(signal.SIGUSR1, self.sigusr1_handler)
         signal.signal(signal.SIGUSR2, self.sigusr2_handler)
-
-        GPIO.setwarnings(False)
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        GPIO.add_event_detect(PIN, GPIO.RISING, callback=self.button_callback, bouncetime=200)
 
         for meta in registry.get_all_metadata():
             utils.download_file(meta['picon'], meta['picon_url'])
@@ -74,15 +64,17 @@ class Dispatcher():
             connection, client_address = sock.accept()
             try:
                 cmd = connection.recv(38).decode("utf-8")
+                print('selector.ctrl: ' + cmd)
+
                 if cmd == 'get modules':
                     modules = self.get_modules()
-                    connection.sendall(json.dumps(modules).encode())
+                    connection.sendall(json.dumps(modules).encode('utf-8'))
                 elif cmd.startswith('get entries '):
-                    entries = self.get_module_entries(cmd[4:])
-                    connection.sendall(json.dumps(entries).encode())
+                    entries = self.get_module_entries(cmd[12:])
+                    connection.sendall(json.dumps(entries).encode('utf-8'))
                 elif cmd == 'get entries':
                     entries = self.module.get_entries()
-                    connection.sendall(json.dumps(entries).encode())
+                    connection.sendall(json.dumps(entries).encode('utf-8'))
                 elif cmd == 'up':
                     self.up()
                 elif cmd == 'down':
@@ -90,33 +82,20 @@ class Dispatcher():
                 elif cmd == 'select':
                     self.select()
                 elif cmd.startswith('select module '):
-                    selection_id = self.get_module_index(cmd[14:])
-                    if selection_id != None:
-                        self.module = None
-                        self.selection_id = selection_id
-                        self.select()
+                    self.module = self.get_module(cmd[14:])
+                    if self.module:
+                        self.module.init()
                 elif cmd.startswith('select entry '):
-                    self.selection_id = int(cmd[13:])
-                    utils.ib_update_selection(self.selection_id)
-                    self.select()
+                    selection_id = int(cmd[13:])
+                    self.select(selection_id)
                 elif cmd == 'exit':
                     self.exit()
             finally:
                 connection.close()
 
     def reset(self):
-        self.selection_id = None
         self.module = None
-
-    def initialize_module(self):
-        if registry.get_length() == 1:
-            self.module = registry.get_all_modules()[0]
-            self.module.handle_short_press()
-        else:
-            self.selection_id = 0
-            utils.ib_update_selection(self.selection_id)
-            utils.ib_update_selector(registry.get_all_metadata())
-            utils.ib_notify('infoscreen/selector/visible', 'true')
+        utils.ib_notify('infoscreen/selector/visible', 'false')
 
     def get_modules(self):
         modules = []
@@ -129,52 +108,42 @@ class Dispatcher():
 
         return modules
 
-    def get_module_index(self, module_id):
+    def get_module(self, module_id):
         for idx, metadata in enumerate(registry.get_all_metadata()):
             if metadata['id'] == module_id:
-                return idx
+                return registry.get_all_modules()[idx]
 
         return None
 
     def get_module_entries(self, module_id):
-        module = None
-
         for idx, metadata in enumerate(registry.get_all_metadata()):
             if metadata['id'] == module_id:
-                module = registry.get_all_modules()[idx]
+                return registry.get_all_modules()[idx].get_entries()
 
-        return module.get_entries()
+        return []
 
     def up(self):
         print('up.')
 
         if self.module:
             self.module.up()
-        elif self.selection_id == None:
-            self.initialize_module()
-        else:
-            self.selection_id = (self.selection_id - 1) % registry.get_length()
-            utils.ib_update_selection(self.selection_id)
 
     def down(self):
         print('down.')
 
         if self.module:
             self.module.down()
-        elif self.selection_id == None:
-            self.initialize_module()
-        else:
-            self.selection_id = (self.selection_id + 1) % registry.get_length()
-            utils.ib_update_selection(self.selection_id)
 
-    def select(self):
+    def select(self, selection_id=None):
         print('select.')
 
         if self.module:
-            self.module.select()
-        elif self.selection_id != None:
-            self.module = registry.get_all_modules()[self.selection_id]
-            self.selection_id = None
+            module = self.module.select(selection_id)
+            if module:
+                self.module = module
+                self.module.init()
+        else:
+            self.module = registry.get_selector()
             self.module.init()
 
     def exit(self):
@@ -193,41 +162,10 @@ class Dispatcher():
 
         self.select()
 
-    def button_callback(self, channel):
-        if self.ignore_callback:
-            print('ignore callback')
-            return
-
-        time.sleep(0.005)
-        if GPIO.input(channel) == GPIO.LOW:
-            print('level less than 5 ms')
-            return
-
-        if not registry.ready():
-            print('modules not ready')
-            return
-
-        print('button pressed.')
-        time.sleep(0.2)
-        if GPIO.input(channel) == GPIO.LOW:
-            self.short_press()
-        else:
-            time.sleep(0.2)
-            if GPIO.input(channel) == GPIO.LOW:
-                self.short_press()
-            else:
-                self.ignore_callback = True # removing and readding the callback segfaults every now and then
-                time.sleep(0.35)
-                if GPIO.input(channel) == GPIO.HIGH:
-                    self.long_press()
-                    time.sleep(1)
-                self.ignore_callback = False
-
     def sigterm_handler(self, signal, frame):
         if self.module:
             self.module.terminate()
 
-        GPIO.cleanup()
         print('bye.')
         sys.exit(0)
 
