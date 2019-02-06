@@ -21,7 +21,7 @@ json = require "json"
 
 util.auto_loader(_G)
 
-local SIDEBAR_WIDTH = 400
+local SIDEBAR_WIDTH = 600
 
 local data = N.data or {news={}}
 
@@ -229,7 +229,7 @@ Sidebar = (function()
     }
 
     local function draw_news()
-        local y = 500
+        local y = 450
         local max_lines = 3
 
         for idx, entry in ipairs(data.news) do
@@ -237,34 +237,30 @@ Sidebar = (function()
                 break
             end
 
-            local published_width = _G["font"]:width(entry.published, 30)
-            _G["font"]:write(15, y, entry.published, 30, 0, 0, 0, 1)
+            local published_width = _G["font"]:width(entry.published, 45)
+            _G["font"]:write(15, y, entry.published, 45, 0, 0, 0, 1)
 
-            for idx, line in ipairs(wrap(entry.title, 27)) do
+            for idx, line in ipairs(wrap(entry.title, 28)) do
                 if idx > max_lines then
                     break
                 end
 
-                if idx == 3 then
-                    max_lines = 2
-                end
-
                 if idx > 1 then
-                    y = y + 40
+                    y = y + 50
                 end
 
                 if entry.today then
-                    _G["font"]:write(15 + published_width + 15, y, line, 35, 0, 0, 0, 1)
+                    _G["font"]:write(15 + published_width + 15, y, line, 50, 0, 0, 0, 1)
                 else
-                    _G["font"]:write(15 + published_width + 15, y, line, 35, 0, 0, 0, 0.8)
+                    _G["font"]:write(15 + published_width + 15, y, line, 50, 0, 0, 0, 0.8)
                     if idx == 2 then
-                        local relative_width = _G["font"]:width(entry.relative, 20)
-                        _G["font"]:write(15 + (published_width - relative_width) / 2, y - 10, entry.relative, 20, 0, 0, 0, 1)
+                        local relative_width = _G["font"]:width(entry.relative, 35)
+                        _G["font"]:write(15 + (published_width - relative_width) / 2, y - 5, entry.relative, 35, 0, 0, 0, 1)
                     end
                 end
             end
 
-            y = y + 50
+            y = y + 60
         end
     end
 
@@ -295,7 +291,7 @@ Sidebar = (function()
             local high_width = _G["font"]:width(Weather.high_temperature(), 70)
             _G["font"]:write(SIDEBAR_WIDTH - high_width - 40, 320, Weather.high_temperature(), 70, 0, 0, 0, 1)
             local current_width = _G["font"]:width(Weather.current_temperature(), 70)
-            _G["font"]:write((SIDEBAR_WIDTH - current_width) / 2, 400, Weather.current_temperature(), 70, 0, 0, 0, 1)
+            _G["font"]:write((SIDEBAR_WIDTH - current_width) / 2, 320, Weather.current_temperature(), 70, 0, 0, 0, 1)
 
             -- news
             draw_news()

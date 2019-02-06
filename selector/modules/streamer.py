@@ -84,7 +84,7 @@ def play(url, callback=None, fit=False):
             '--timeout', '20',
             '-b',
             '-o', 'alsa:hw:1,0',
-            '--win', '0,530,880,1025',
+            '--win', '165,540,1155,1080',
             url
         ], stderr=subprocess.PIPE, preexec_fn=os.setsid)
     else:
