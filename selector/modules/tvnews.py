@@ -33,21 +33,21 @@ PROGRAMS = [
     {
         'name': 'Tagesschau in 100 Sekunden',
         'short': 'tagesschau100',
-        'rss': 'https://www.ardmediathek.de/tv/Tagesschau-in-100-Sekunden/Sendung?documentId=52149182&bcastId=52149182&rss=true',
+        'rss': 'https://www.tagesschau.de/export/video-podcast/webxl/tagesschau-in-100-sekunden_https/',
         'picon': 'https://img.ardmediathek.de/standard/00/52/14/95/00/-1774185891/16x9/704?mandant=ard',
         'provider': 'ard'
     },
     {
         'name': 'Tagesthemen',
         'short': 'tagesthemen',
-        'rss': 'https://www.ardmediathek.de/tv/Tagesthemen/Sendung?documentId=3914&bcastId=3914&rss=true',
+        'rss': 'https://www.tagesschau.de/export/video-podcast/webxl/tagesthemen_https/',
         'picon': 'https://img.ardmediathek.de/standard/00/00/00/39/22/67648717/16x9/704?mandant=ard',
         'provider': 'ard'
     },
     {
         'name': 'Tagesschau',
         'short': 'tagesschau',
-        'rss': 'https://www.ardmediathek.de/tv/Tagesschau/Sendung?documentId=4326&bcastId=4326&rss=true',
+        'rss': 'https://www.tagesschau.de/export/video-podcast/webxl/tagesschau_https',
         'picon': 'https://img.ardmediathek.de/standard/00/07/64/05/74/2121327408/16x9/384?mandant=ard',
         'provider': 'ard'
     },
@@ -167,30 +167,16 @@ class TVNews():
 class DataLoader():
     def fetch_ard(self, program):
         feed = feedparser.parse(program['rss'])
+        first_entry = feed['entries'][0]
 
-        res = re.search(r'\| ([0-9]+) Min. \|', feed['entries'][0]['summary'])
-        if res:
-            duration = res.group(1)
-        else:
-            duration = -1
-
-        res = re.search(r'([0-9]+)$', feed['entries'][0]['link'])
-        if not res:
-            return None
-
-        document_id = res.group(1)
-
-        url = 'http://www.ardmediathek.de/play/media/{}?devicetype=pc&features'.format(document_id)
-        res = requests.get(url)
-        if not res.ok:
-            return None
-
-        video_url = res.json()['_mediaArray'][-1]['_mediaStreamArray'][-1]['_stream']
-        published = feed['entries'][0]['published']
+        video_url = first_entry['links'][0]['href']
+        duration = first_entry['itunes_duration'].split(':', 1)[1]
+        published = first_entry['published']
+        published = datetime.strptime(published, "%a, %d %b %Y %H:%M:%S %z")
 
         return {
             'video': video_url,
-            'published': datetime.strptime(published, "%a, %d %b %Y %H:%M:%S %Z").timestamp(),
+            'published': published.timestamp(),
             'duration': duration
         }
 
