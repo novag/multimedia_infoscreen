@@ -133,7 +133,7 @@ class TVNews():
         if not selection_id:
             selection_id = self.selection_id
 
-        streamer.play(self.epg_data[selection_id]['video'], self.stream_finished, True)
+        streamer.play(self.epg_data[selection_id]['video'], self.stream_finished, False, True)
 
     def exit(self):
         print('tvnews: exit.')

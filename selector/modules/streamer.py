@@ -28,14 +28,14 @@ from . import utils
 
 
 class OutputProcessorThread(threading.Thread):
-    def __init__(self, process, callback):
+    def __init__(self, player, callback):
         super(OutputProcessorThread, self).__init__()
-        self.process = process
+        self.player = player
         self.callback = callback
 
     def run(self):
-        while self.process:
-            if not self.process or self.process.poll() != None:
+        while self.player:
+            if not self.player or self.player.poll() != None:
                 break
 
         utils.ib_notify('infoscreen/overlay/visible', 'false')
@@ -43,7 +43,8 @@ class OutputProcessorThread(threading.Thread):
             self.callback()
 
 
-process = None
+restreamer = None
+player = None
 output_thread = None
 
 def stop_radio():
@@ -57,29 +58,45 @@ def stop_radio():
     sock.close()
 
 def is_playing():
-    return process and process.poll() == None
+    return player and player.poll() == None
 
 def stop():
-    global output_thread, process
+    global output_thread, player, restreamer
 
-    if process and process.poll() == None:
-        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-        process.wait()
+    if restreamer and restreamer.poll() == None:
+        os.killpg(os.getpgid(restreamer.pid), signal.SIGTERM)
+        restreamer.wait()
 
-    process = None
+    if player and player.poll() == None:
+        os.killpg(os.getpgid(player.pid), signal.SIGTERM)
+        player.wait()
+
+    restreamer = None
+    player = None
 
     output_thread = None
 
-def play(url, callback=None, fit=False):
-    global output_thread, process
+def play(url, callback=None, hls=False, fit=False):
+    global output_thread, player, restreamer
 
     print('streamer: play: ' + url)
     stop()
 
     stop_radio()
 
+    if hls:
+        restreamer = subprocess.Popen([
+            'ffmpeg',
+            '-i', url,
+            '-c', 'copy',
+            '-f', 'mpegts',
+            'udp://localhost:1234'
+        ], preexec_fn=os.setsid)
+
+        url = 'udp://localhost:1234'
+
     if fit:
-        process = subprocess.Popen([
+        player = subprocess.Popen([
             'omxplayer',
             '--timeout', '20',
             '-b',
@@ -88,7 +105,7 @@ def play(url, callback=None, fit=False):
             url
         ], stderr=subprocess.PIPE, preexec_fn=os.setsid)
     else:
-        process = subprocess.Popen([
+        player = subprocess.Popen([
             'omxplayer',
             '--timeout', '20',
             '-b',
@@ -97,7 +114,7 @@ def play(url, callback=None, fit=False):
         ], stderr=subprocess.PIPE, preexec_fn=os.setsid)
         utils.ib_notify('infoscreen/overlay/visible', 'true')
 
-    output_thread = OutputProcessorThread(process, callback)
+    output_thread = OutputProcessorThread(player, callback)
     output_thread.start()
 
     utils.ib_notify('infoscreen/selector/visible', 'false')

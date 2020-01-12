@@ -33,13 +33,15 @@ CHANNELS = [
     {
         'name': 'Das Erste HD',
         'short': 'daserste',
-        'stream': 'https://daserstehdde-lh.akamaihd.net/i/daserstehd_de@629196/index_3776_av-p.m3u8?sd=10&rebase=on',
+        'stream': 'https://mcdn.daserste.de/daserste/de/master.m3u8',
+        'hls': True,
         'picon': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Das_Erste_2014.svg/320px-Das_Erste_2014.svg.png'
     },
     {
         'name': 'ZDF HD',
         'short': 'zdf',
-        'stream': 'https://zdf1314-lh.akamaihd.net/i/de14_v1@392878/index_3096_av-b.m3u8?sd=10&rebase=on',
+        'stream': 'https://zdf-hls-01.akamaized.net/hls/live/2002460/de/high/master.m3u8',
+        'hls': True,
         'picon': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/ZDF_logo.svg/320px-ZDF_logo.svg.png'
     }
 ]
@@ -100,7 +102,9 @@ class TVStreams():
         if not selection_id:
             selection_id = self.selection_id
 
-        streamer.play(CHANNELS[selection_id]['stream'], self.stream_finished)
+        channel = CHANNELS[selection_id]
+
+        streamer.play(channel['stream'], self.stream_finished, channel['hls'])
 
     def exit(self):
         print('tvnews: exit.')
