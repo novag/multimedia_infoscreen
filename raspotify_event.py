@@ -99,7 +99,7 @@ def fetch_track():
     udp.sendto('infoscreen/music/image:{}'.format(image).encode(), ('127.0.0.1', 4444))
 
 if event == 'start':
-    os.system('killall -SIGUSR1 wgis_radio.py')
+    os.system('killall -SIGUSR1 radio.py')
     fetch_track()
     udp.sendto('infoscreen/music/playing:true'.encode(), ('127.0.0.1', 4444))
 elif event == 'stop':

@@ -12,7 +12,7 @@ These instructions will hopefully get you a copy of the project up and running o
 2. Create a Spotify application and obtain the client id and client secret
 3. Rename config.json.example to config.json
 4. Connect a simple push button to pin 15 on the Raspberry Pi
-5. Add or remove radio stations in `wgis_radio.py`.
+5. Add or remove radio stations in `radio.py`.
 
 Congrats! You're done.
 
@@ -36,7 +36,7 @@ chown <USER>:raspotify <DIRECTORY>
 INFOBEAMER_INFO_INTERVAL=900 info-beamer <DIRECTORY> &
 runuser -l <USER> -c "<DIRECTORY>/service"
 runuser -l <USER> -c "<DIRECTORY>/muc-oepnv/service"
-runuser -l raspotify -s /bin/sh -c "<DIRECTORY>/wgis_radio.py"
+runuser -l raspotify -s /bin/sh -c "<DIRECTORY>/radio.py"
 ```
 
 Create systemd units or whatever you want.

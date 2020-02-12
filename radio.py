@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -u
 
 """
-multimedia: play/change/stop radio station on button event
+multimedia: play/change/stop radio station
 
  Copyright (C) 2018 Hendrik Hagendorn
 
@@ -29,7 +29,6 @@ import subprocess
 import sys
 import threading
 import time
-from RPi import GPIO
 
 STATIONS = [
     {
@@ -76,7 +75,6 @@ STATIONS = [
     }
 ]
 
-PIN = 15
 
 class Radio():
     SOCKET_ADDR = '/tmp/radio.ctrl'
@@ -90,11 +88,6 @@ class Radio():
         signal.signal(signal.SIGINT, self.sigterm_handler)
         signal.signal(signal.SIGUSR1, self.sigusr1_handler)
         signal.signal(signal.SIGUSR2, self.sigusr2_handler)
-
-        GPIO.setwarnings(False)
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        GPIO.add_event_detect(PIN, GPIO.RISING, callback=self.button_callback, bouncetime=200)
 
     def run(self):
         try:
@@ -152,7 +145,7 @@ class Radio():
             self.next()
 
     def play(self, station):
-        print('wgis_radio: play ' + station['name'])
+        print('radio: play ' + station['name'])
 
         if self.process:
             self.process.terminate()
@@ -175,7 +168,7 @@ class Radio():
         threading.Thread(target=self.process_output, args=(self.process, station,)).start()
 
     def stop(self):
-        print('wgis_radio: stop ' + STATIONS[self.station]['name'])
+        print('radio: stop ' + STATIONS[self.station]['name'])
 
         if self.process:
             self.process.terminate()
@@ -184,58 +177,30 @@ class Radio():
         self.ib_notify('infoscreen/music/playing', 'false')
 
     def previous(self):
-        print('wgis_radio: previous station.')
+        print('radio: previous station.')
 
         self.station = (self.station - 1) % len(STATIONS)
         self.play(STATIONS[self.station])
 
     def next(self):
-        print('wgis_radio: next station.')
+        print('radio: next station.')
 
         self.station = (self.station + 1) % len(STATIONS)
         self.play(STATIONS[self.station])
 
-    def button_callback(self, channel):
-        time.sleep(0.005)
-        if GPIO.input(channel) == GPIO.LOW:
-            print('level less than 5 ms')
-            return
-
-        print('button pressed.')
-        if not self.process or self.process.poll() != None:
-            print('play station.')
-            self.station = 0
-            self.play(STATIONS[self.station])
-        else:
-            time.sleep(0.2)
-            if GPIO.input(channel) == GPIO.LOW:
-                self.next()
-            else:
-                time.sleep(0.2)
-                if GPIO.input(channel) == GPIO.LOW:
-                    self.next()
-                else:
-                    GPIO.remove_event_detect(channel)
-                    time.sleep(0.35)
-                    if GPIO.input(channel) == GPIO.HIGH:
-                        self.stop()
-                        time.sleep(2)
-                    GPIO.add_event_detect(PIN, GPIO.RISING, callback=self.button_callback, bouncetime=200)
-
     def sigterm_handler(self, signal, frame):
-        print('bye.')
+        print('radio: bye.')
 
         self.stop()
-        GPIO.cleanup()
         sys.exit(0)
 
     def sigusr1_handler(self, signal, frame):
-        print("usr1")
+        print("radio: usr1")
 
         self.stop()
 
     def sigusr2_handler(self, signal, frame):
-        print("usr2")
+        print("radio: usr2")
 
         self.play(STATIONS[0])
 
