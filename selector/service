@@ -43,7 +43,7 @@ class Dispatcher():
         signal.signal(signal.SIGUSR2, self.sigusr2_handler)
 
         for meta in registry.get_all_metadata():
-            utils.download_file(meta['picon'], meta['picon_url'])
+            utils.download_file(utils.prefix_tmp(meta['picon']), meta['picon_url'])
 
         for module in registry.get_all_modules():
             module.refresh()

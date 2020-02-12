@@ -2,6 +2,7 @@
 
 config.json
 
-xint_*
+x_*
+tmp_*
 /run.sh
 /deploy.sh

@@ -122,6 +122,9 @@ class Radio():
         udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp.sendto('{}:{}'.format(path, data).encode(), ('127.0.0.1', 4444))
 
+    def prefix_tmp(self, short_name):
+        return 'tmp_{}'.format(short_name)
+
     def process_output(self, process, station):
         while True:
             line = self.process.stderr.readline().decode('utf8')
@@ -135,7 +138,7 @@ class Radio():
                     print('title:' + title)
                     self.ib_notify('infoscreen/music/title', title)
                     self.ib_notify('infoscreen/music/artists', artist)
-                    self.ib_notify('infoscreen/music/image', station['short'])
+                    self.ib_notify('infoscreen/music/image', self.prefix_tmp(station['short']))
                     self.ib_notify('infoscreen/music/playing', 'true')
 
     def push(self):
@@ -151,7 +154,7 @@ class Radio():
             self.process.terminate()
             self.process.wait()
 
-        path = '{}/{}.jpeg'.format(os.path.dirname(os.path.realpath(__file__)), station['short'])
+        path = '{}/{}.jpeg'.format(os.path.dirname(os.path.realpath(__file__)), self.prefix_tmp(station['short']))
         if not os.path.isfile(path):
             res = requests.get(station['image'], stream=True)
             if res.status_code == 200:
@@ -161,7 +164,7 @@ class Radio():
 
         self.ib_notify('infoscreen/music/title', station['name'])
         self.ib_notify('infoscreen/music/artists')
-        self.ib_notify('infoscreen/music/image', station['short'])
+        self.ib_notify('infoscreen/music/image', self.prefix_tmp(station['short']))
         self.ib_notify('infoscreen/music/playing', 'true')
 
         self.process = subprocess.Popen(['mpg123', station['stream']], stderr=subprocess.PIPE)

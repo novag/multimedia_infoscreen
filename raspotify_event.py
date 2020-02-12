@@ -44,9 +44,9 @@ if event == 'change':
 
 def clear_cache():
     if event == 'change':
-        path = '{}/{}.jpeg'.format(os.path.dirname(os.path.realpath(__file__)), old_track_id)
+        path = '{}/tmp_{}.jpeg'.format(os.path.dirname(os.path.realpath(__file__)), old_track_id)
     else:
-        path = '{}/{}.jpeg'.format(os.path.dirname(os.path.realpath(__file__)), track_id)
+        path = '{}/tmp_{}.jpeg'.format(os.path.dirname(os.path.realpath(__file__)), track_id)
 
     try:
         os.remove(path)
@@ -62,7 +62,7 @@ def fetch_track():
     uri = ''
     while uri == '':
         msg = j.get_previous()['MESSAGE']
-        res = re.search(r'spotify:track:([a-zA-Z0-9]+)', msg, re.M|re.I)
+        res = re.search(r'spotify:track:([a-zA-Z0-9]+)', msg, re.M | re.I)
         if res:
             uri = res.group(1)
 
@@ -87,7 +87,7 @@ def fetch_track():
 
     image = 'null'
     if image_url:
-        image = track_id
+        image = 'tmp_{}'.format(track_id)
         res = requests.get(image_url, stream=True)
         if res.status_code == 200:
             with open('{}/{}.jpeg'.format(os.path.dirname(os.path.realpath(__file__)), image), 'wb') as f:

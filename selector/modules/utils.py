@@ -27,6 +27,9 @@ def download_file(name, url):
 
     return filename
 
+def prefix_tmp(key):
+    return 'tmp_{}'.format(key)
+
 def ib_notify(path, data=''):
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp.sendto('{}:{}'.format(path, data).encode(), ('127.0.0.1', 4444))

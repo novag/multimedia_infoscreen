@@ -66,7 +66,7 @@ PROGRAMS = [
         'provider': 'zdf'
     }
 ]
-EPG_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'epg.tvnews.json')
+EPG_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tmp_epg.tvnews.json')
 
 
 class TVNews():
@@ -84,7 +84,7 @@ class TVNews():
 
             entries.append({
                 'title': program['name'],
-                'picon': program['short'],
+                'picon': utils.prefix_tmp(program['short']),
                 'subtitle': '{} - {} min'.format(date.strftime("%d.%m.%Y, %H:%M"), epg_program['duration'])
             })
 
@@ -144,7 +144,7 @@ class TVNews():
 
     def refresh(self):
         for program in PROGRAMS:
-            utils.download_file(program['short'], program['picon'])
+            utils.download_file(utils.prefix_tmp(program['short']), program['picon'])
 
         if not os.path.isfile(EPG_PATH):
             DataLoader().fetch(False)

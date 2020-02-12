@@ -56,7 +56,7 @@ class TVStreams():
         for channel in CHANNELS:
             self.entries.append({
                 'title': channel['name'],
-                'picon': channel['short'],
+                'picon': utils.prefix_tmp(channel['short']),
                 'subtitle': ''
             })
 
@@ -115,7 +115,7 @@ class TVStreams():
 
     def refresh(self):
         for channel in CHANNELS:
-            utils.download_file(channel['short'], channel['picon'])
+            utils.download_file(utils.prefix_tmp(channel['short']), channel['picon'])
 
         registry.set_ready()
 
