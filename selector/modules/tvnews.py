@@ -28,7 +28,6 @@ import requests
 import sys
 from datetime import datetime
 
-
 PROGRAMS = [
     {
         'name': 'Tagesschau in 100 Sekunden',
@@ -47,9 +46,9 @@ PROGRAMS = [
     {
         'name': 'Tagesschau',
         'short': 'tagesschau',
-        'rss': 'https://www.tagesschau.de/export/video-podcast/webxl/tagesschau_https',
+        'url': 'https://www.tagesschau.de/sendung/letzte-sendung/index.html',
         'picon': 'https://img.ardmediathek.de/standard/00/07/64/05/74/2121327408/16x9/384?mandant=ard',
-        'provider': 'ard'
+        'provider': 'tagesschau'
     },
     {
         'name': 'heute Xpress',
@@ -164,7 +163,31 @@ class TVNews():
         streamer.stop()
         self.selection_id = None
 
+
 class DataLoader():
+    def fetch_tagesschau(self, program):
+        res = requests.get(program['url'])
+        if not res.ok:
+            return None
+        data = res.text
+
+        res = re.search('href="(.+)">HD', data)
+        if not res:
+            return None
+        video_url = res.group(1)
+        video_url = f'https:{video_url}'
+
+        res = re.search('Sendung:\stagesschau\s\s([0-9]{2}\.[0-9]{2}\.[0-9]{4}\s[0-9]{1,2}:[0-9]{2})', data)
+        if not res:
+            return None
+        published = datetime.strptime(res.group(1), '%d.%m.%Y %H:%M')
+
+        return {
+            'video': video_url,
+            'published': published.timestamp(),
+            'duration': ''
+        }
+
     def fetch_ard(self, program):
         feed = feedparser.parse(program['rss'])
         first_entry = feed['entries'][0]
@@ -225,10 +248,17 @@ class DataLoader():
         available_programmes = []
 
         for program_id, program in enumerate(PROGRAMS):
-            if program['provider'] == 'ard':
+            provider = program['provider']
+
+            if provider == 'tagesschau':
+                entry = self.fetch_tagesschau(program)
+            elif provider == 'ard':
                 entry = self.fetch_ard(program)
-            else:
+            elif provider == 'zdf':
                 entry = self.fetch_zdf(program)
+            else:
+                print('Unknown provider: ' + provider)
+                continue
 
             print(entry)
 
@@ -241,6 +271,7 @@ class DataLoader():
 
         if notify:
             os.system('pkill -SIGUSR2 -f selector/service')
+
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'fetch':
