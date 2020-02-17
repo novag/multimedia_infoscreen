@@ -24,8 +24,13 @@ import signal
 import socket
 import subprocess
 import threading
+from RPi import GPIO
 from . import utils
 
+PIN_AIRCOOLING = 17
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN_AIRCOOLING, GPIO.OUT)
 
 class OutputProcessorThread(threading.Thread):
     def __init__(self, player, callback):
@@ -63,6 +68,8 @@ def is_playing():
 def stop():
     global output_thread, player, restreamer
 
+    GPIO.output(PIN_AIRCOOLING, GPIO.LOW)
+
     if restreamer and restreamer.poll() == None:
         os.killpg(os.getpgid(restreamer.pid), signal.SIGTERM)
         restreamer.wait()
@@ -83,6 +90,8 @@ def play(url, callback=None, hls=False, fit=False):
     stop()
 
     stop_radio()
+
+    GPIO.output(PIN_AIRCOOLING, GPIO.HIGH)
 
     if hls:
         restreamer = subprocess.Popen([
