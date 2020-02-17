@@ -171,21 +171,28 @@ class DataLoader():
             return None
         data = res.text
 
-        res = re.search('href="(.+)">HD', data)
-        if not res:
-            return None
-        video_url = res.group(1)
-        video_url = f'https:{video_url}'
-
         res = re.search('Sendung:\stagesschau\s\s([0-9]{2}\.[0-9]{2}\.[0-9]{4}\s[0-9]{1,2}:[0-9]{2})', data)
         if not res:
             return None
         published = datetime.strptime(res.group(1), '%d.%m.%Y %H:%M')
 
+        res = re.search('data-ctrl-videocollsearch_video-([0-9]+)-entry', data)
+        if not res:
+            return None
+        video_id = res.group(1)
+
+        res = requests.get('https://www.tagesschau.de/multimedia/video/video-{}~mediajson_broadcastType-TS2000.json'.format(video_id))
+        if not res.ok:
+            return None
+        data = res.json()
+
+        video_url = data['_mediaArray'][0]['_mediaStreamArray'][-1]['_stream']
+        duration = data['_duration']
+
         return {
             'video': video_url,
             'published': published.timestamp(),
-            'duration': ''
+            'duration': round(duration / 60)
         }
 
     def fetch_ard(self, program):
