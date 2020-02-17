@@ -91,6 +91,7 @@ def get_wetter24_forecast_icon(root):
         'heiter, Regenschauer': 'partlycloudy',
         'wolkig': 'partlycloudy',
         'wolkig, leichter Sprühregen': 'partlycloudy',
+        'wolkig, leichter Regen': 'rainy',
         'wolkig, Regenschauer': 'rainy',
         'wolkig, Gewitter': 'rainy',
         'wolkig, Schneeregenschauer': 'rainy',
