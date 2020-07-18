@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import requests
 
-DEFAULT_BASE_URL = 'https://apps.mvg-fahrinfo.de/v10/rest/10.0/'
+DEFAULT_BASE_URL = 'https://apps.mvg-fahrinfo.de/v12/rest/12.0/'
 DEFAULT_API_KEY = ''
 
 
@@ -338,7 +338,7 @@ class Departure(object):
 
 class MVGAPI(object):
 
-    def __init__(self, base_url=DEFAULT_BASE_URL, api_key=DEFAULT_API_KEY, user_agent='MVG Fahrinfo Android 5.4'):
+    def __init__(self, base_url=DEFAULT_BASE_URL, api_key=DEFAULT_API_KEY, user_agent='MVG Fahrinfo Android 6.6'):
         self._base_url = base_url
         self._api_key = api_key
         self._user_agent = user_agent
@@ -487,6 +487,10 @@ class MVGAPI(object):
         return ZoomResponse(data['efaId'], data['name'], transport_devices)
 
     def _get_departures(self, station_id, ubahn=True, sbahn=False, tram=False, bus=True, zug=False):
+        station_id = str(station_id)
+        if not station_id.startswith('de:09162:'):
+            station_id = 'de:09162:{}'.format(station_id)
+
         params = {
             'ubahn': ubahn,
             'sbahn': sbahn,
