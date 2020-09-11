@@ -19,7 +19,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 _dispatcher = None
 _selector = None
 _modules = []
@@ -47,6 +46,9 @@ def set_ready():
 
 def ready():
     return _ready_count >= len(_modules)
+
+def module_self_activate(module):
+    _dispatcher.self_activate(module)
 
 def module_finished():
     _dispatcher.reset()

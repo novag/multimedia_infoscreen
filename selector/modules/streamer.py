@@ -25,7 +25,9 @@ import socket
 import subprocess
 import threading
 from RPi import GPIO
+
 from . import utils
+
 
 PIN_AIRCOOLING = 17
 GPIO.setwarnings(False)

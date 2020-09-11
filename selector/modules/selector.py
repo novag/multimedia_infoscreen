@@ -20,23 +20,20 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import feedparser
-import json
-import os
-import re
-import requests
-import sys
-from datetime import datetime
-from . import registry, streamer, utils
+from . import module, registry, utils
 
 
-class Selector():
+class Selector(module.Module):
+    ID = 'selector'
+    TITLE = 'Selector'
+    PICON_URL = None
+
     def __init__(self):
         self.modules = []
         self.selection_id = None
 
-    def init(self):
-        print('selector: init.')
+    def on_visible(self):
+        self.log('on_visible')
 
         self.selection_id = 0
         self.modules = registry.get_all_metadata()
@@ -46,47 +43,41 @@ class Selector():
         utils.ib_notify('infoscreen/selector/visible', 'true')
 
     def get_entries(self):
-        entries = []
-
-        for module in registry.get_all_metadata():
-            entries.append({
+        return [
+            {
                 'id': module['id'],
                 'title': module['title']
-            })
+            }
+            for module in registry.get_all_metadata()
+        ]
 
-        return entries
-
-    def up(self):
-        print('selector: up.')
+    def on_up(self):
+        self.log('up')
 
         self.selection_id = (self.selection_id - 1) % len(self.modules)
         utils.ib_update_selection(self.selection_id)
 
-    def down(self):
-        print('selector: down.')
+    def on_down(self):
+        self.log('down')
 
         self.selection_id = (self.selection_id + 1) % len(self.modules)
         utils.ib_update_selection(self.selection_id)
 
-    def select(self, selection_id=None):
-        print('selector: select.')
+    def on_select(self, selection_id=None):
+        self.log('select')
 
         if not selection_id:
             selection_id = self.selection_id
 
         return registry.get_all_modules()[selection_id]
 
-    def exit(self):
-        print('selector: exit.')
+    def on_exit(self):
+        self.log('on_exit')
 
-        pass
-
-    def refresh(self):
-        pass
-
-    def terminate(self):
-        print('bye.')
+    def on_terminate(self):
+        self.log('terminate')
 
         self.selection_id = None
+
 
 registry.register_selector(Selector())

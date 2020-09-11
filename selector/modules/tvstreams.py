@@ -20,13 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import feedparser
-import json
-import os
-import re
-import requests
-import sys
-from datetime import datetime
+from . import module, registry, streamer, utils
 
 
 CHANNELS = [
@@ -47,18 +41,22 @@ CHANNELS = [
 ]
 
 
-class TVStreams():
-    def __init__(self):
-        self.epg_data = []
-        self.entries = []
-        self.selection_id = None
+class TVStreams(module.Module):
+    ID = 'tvstreams'
+    TITLE = 'Live TV'
+    PICON_URL = 'https://cdn1.vectorstock.com/i/1000x1000/02/90/tv-icon-vector-13820290.jpg'
 
-        for channel in CHANNELS:
-            self.entries.append({
+    def __init__(self):
+        self.selection_id = None
+        self.epg_data = []
+        self.entries = [
+            {
                 'title': channel['name'],
                 'picon': utils.prefix_tmp(channel['short']),
                 'subtitle': ''
-            })
+            }
+            for channel in CHANNELS
+        ]
 
     def update(self):
         if self.entries:
@@ -67,37 +65,37 @@ class TVStreams():
 
         utils.ib_update_selector(self.entries)
 
-    def init(self):
-        print('tvstreams: init.')
+    def on_visible(self):
+        self.log('on_visible')
 
         self.update()
         utils.ib_notify('infoscreen/selector/visible', 'true')
 
     def get_entries(self):
-        entries = []
+        self.log('get_entries')
 
-        for channel in CHANNELS:
-            entries.append({
+        return [
+            {
                 'id': channel['short'],
                 'title': channel['name']
-            })
+            }
+            for channel in CHANNELS
+        ]
 
-        return entries
-
-    def up(self):
-        print('tvstreams: up.')
+    def on_up(self):
+        self.log('on_up')
 
         self.selection_id = (self.selection_id - 1) % len(self.entries)
         utils.ib_update_selection(self.selection_id)
 
-    def down(self):
-        print('tvstreams: down.')
+    def on_down(self):
+        self.log('on_down')
 
         self.selection_id = (self.selection_id + 1) % len(self.entries)
         utils.ib_update_selection(self.selection_id)
 
-    def select(self, selection_id=None):
-        print('tvstreams: select.')
+    def on_select(self, selection_id=None):
+        self.log('on_select')
 
         if not selection_id:
             selection_id = self.selection_id
@@ -106,8 +104,8 @@ class TVStreams():
 
         streamer.play(channel['stream'], self.stream_finished, channel['hls'])
 
-    def exit(self):
-        print('tvnews: exit.')
+    def on_exit(self):
+        self.log('on_exit')
 
         if streamer.is_playing():
             streamer.stop()
@@ -123,19 +121,12 @@ class TVStreams():
         self.selection_id = None
         registry.module_finished()
 
-    def terminate(self):
-        print('bye.')
+    def on_terminate(self):
+        self.log('on_terminate')
 
         streamer.stop()
         self.selection_id = None
 
-if __name__ != '__main__':
-    from . import registry, streamer, utils
 
-    registry.register(TVStreams(), {
-        'id': 'tvstreams',
-        'title': 'Live TV',
-        'subtitle': '',
-        'picon': 'tvstreams',
-        'picon_url': 'https://cdn1.vectorstock.com/i/1000x1000/02/90/tv-icon-vector-13820290.jpg'
-    })
+if __name__ != '__main__':
+    TVStreams.register()

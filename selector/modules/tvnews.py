@@ -28,6 +28,9 @@ import requests
 import sys
 from datetime import datetime
 
+from . import module, registry, streamer, utils
+
+
 PROGRAMS = [
     {
         'name': 'Tagesschau in 100 Sekunden',
@@ -68,7 +71,11 @@ PROGRAMS = [
 EPG_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tmp_epg.tvnews.json')
 
 
-class TVNews():
+class TVNews(module.Module):
+    ID = 'tvnews'
+    TITLE = 'title'
+    PICON_URL = 'https://img.ardmediathek.de/standard/00/31/33/22/50/-2114473875/16x9/320?mandant=ard'
+
     def __init__(self):
         self.epg_data = []
         self.entries_length = 0
@@ -95,15 +102,16 @@ class TVNews():
 
         utils.ib_update_selector(entries)
 
-    def init(self):
-        print('tvnews: init.')
+    def on_visible(self):
+        self.log('on_visible')
 
         self.update()
         utils.ib_notify('infoscreen/selector/visible', 'true')
 
     def get_entries(self):
-        entries = []
+        self.log('get_entries')
 
+        entries = []
         for epg_program in self.epg_data:
             program = PROGRAMS[epg_program['program_id']]
 
@@ -114,28 +122,28 @@ class TVNews():
 
         return entries
 
-    def up(self):
-        print('tvnews: up.')
+    def on_up(self):
+        self.log('on_up')
 
         self.selection_id = (self.selection_id - 1) % self.entries_length
         utils.ib_update_selection(self.selection_id)
 
-    def down(self):
-        print('tvnews: down.')
+    def on_down(self):
+        self.log('on_down')
 
         self.selection_id = (self.selection_id + 1) % self.entries_length
         utils.ib_update_selection(self.selection_id)
 
-    def select(self, selection_id=None):
-        print('tvnews: select.')
+    def on_select(self, selection_id=None):
+        self.log('on_select')
 
         if not selection_id:
             selection_id = self.selection_id
 
         streamer.play(self.epg_data[selection_id]['video'], self.stream_finished, False, True)
 
-    def exit(self):
-        print('tvnews: exit.')
+    def on_exit(self):
+        self.log('on_exit')
 
         if streamer.is_playing():
             streamer.stop()
@@ -157,14 +165,14 @@ class TVNews():
         self.selection_id = None
         registry.module_finished()
 
-    def terminate(self):
-        print('bye.')
+    def on_terminate(self):
+        self.log('on_terminate')
 
         streamer.stop()
         self.selection_id = None
 
 
-class DataLoader():
+class DataLoader:
     def fetch_tagesschau(self, program):
         res = requests.get(program['url'])
         if not res.ok:
@@ -284,12 +292,4 @@ if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'fetch':
         DataLoader().fetch()
 else:
-    from . import registry, streamer, utils
-
-    registry.register(TVNews(), {
-        'id': 'tvnews',
-        'title': 'Nachrichten',
-        'subtitle': '',
-        'picon': 'tvnews',
-        'picon_url': 'https://img.ardmediathek.de/standard/00/31/33/22/50/-2114473875/16x9/320?mandant=ard'
-    })
+    TVNews.register()

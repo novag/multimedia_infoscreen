@@ -26,7 +26,7 @@ import signal
 import socket
 import sys
 import time
-from modules import registry, utils
+
 from modules import *
 
 
@@ -84,7 +84,7 @@ class Dispatcher():
                 elif cmd.startswith('select module '):
                     self.module = self.get_module(cmd[14:])
                     if self.module:
-                        self.module.init()
+                        self.module.on_visible()
                 elif cmd.startswith('select entry '):
                     selection_id = int(cmd[13:])
                     self.select(selection_id)
@@ -92,6 +92,10 @@ class Dispatcher():
                     self.exit()
             finally:
                 connection.close()
+
+    def self_activate(self, module):
+        self.reset()
+        self.module = module
 
     def reset(self):
         self.module = None
@@ -126,31 +130,31 @@ class Dispatcher():
         print('up.')
 
         if self.module:
-            self.module.up()
+            self.module.on_up()
 
     def down(self):
         print('down.')
 
         if self.module:
-            self.module.down()
+            self.module.on_down()
 
     def select(self, selection_id=None):
         print('select.')
 
         if self.module:
-            module = self.module.select(selection_id)
+            module = self.module.on_select(selection_id)
             if module:
                 self.module = module
-                self.module.init()
+                self.module.on_visible()
         else:
             self.module = registry.get_selector()
-            self.module.init()
+            self.module.on_visible()
 
     def exit(self):
         print('exit.')
 
         if self.module:
-            self.module.exit()
+            self.module.on_exit()
 
     def short_press(self):
         print('short press.')
@@ -164,7 +168,7 @@ class Dispatcher():
 
     def sigterm_handler(self, signal, frame):
         if self.module:
-            self.module.terminate()
+            self.module.on_terminate()
 
         print('bye.')
         sys.exit(0)
@@ -173,7 +177,7 @@ class Dispatcher():
         print("usr1")
 
         if self.module:
-            self.module.terminate()
+            self.module.on_terminate()
 
     def sigusr2_handler(self, signal, frame):
         print("usr2")
