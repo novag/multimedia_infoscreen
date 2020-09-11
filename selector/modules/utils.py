@@ -10,7 +10,10 @@ def download_file(name, url):
     if not res:
         return None
 
-    filetype = res.headers['content-type'].split('/')[-1]
+    if 'content-type' in res.headers:
+        filetype = res.headers['content-type'].split('/')[-1]
+    else:
+        filetype = 'jpg'
     filename = '{}.{}'.format(name, filetype)
     path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), filename)
 
