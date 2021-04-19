@@ -64,6 +64,15 @@ search_page = """<!DOCTYPE html>
     }
     .fa-spinner{
       color: #e56c27;
+      animation: rotation 1s infinite linear;
+    }
+    @keyframes rotation {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(359deg);
+      }
     }
     button {
       border-style: none;
