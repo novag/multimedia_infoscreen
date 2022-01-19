@@ -45,6 +45,7 @@ class OutputProcessorThread(threading.Thread):
             if not self.player or self.player.poll() != None:
                 break
 
+        GPIO.output(PIN_AIRCOOLING, GPIO.LOW)
         utils.ib_notify('infoscreen/overlay/visible', 'false')
         if self.callback:
             self.callback()
