@@ -93,12 +93,12 @@ search_page = """<!DOCTYPE html>
       xhttp.onreadystatechange = function() {
         if (this.readyState == 4) {
           if (this.status == 200) {
-            document.getElementById('check_id').innerHTML = '<i class="far fa-check-circle" style="font-size: 100px;"></i>';   
+            document.getElementById('check_id').innerHTML = '<i class="far fa-check-circle" style="font-size: 100px;"></i>';
           } else {
             document.getElementById('check_id').innerHTML = '<i class="far fa-times-circle" style="font-size: 100px;"></i>';
           }
         } else {
-            document.getElementById('check_id').innerHTML = '<i class="fas fa-spinner" style="font-size: 100px;"></i>'; 
+            document.getElementById('check_id').innerHTML = '<i class="fas fa-spinner" style="font-size: 100px;"></i>';
         }
       };
       xhttp.open('POST', '/data', true);
@@ -130,7 +130,12 @@ def data():
     try:
         with ydl:
             res = ydl.extract_info(youtube_url, download=False)
-            media_url = res['formats'][-1]['url']
+            formats = [
+                f for f in res['formats']
+                if f['vcodec'].startswith('avc1') and int(f['format_note'].replace('p', '')) <= 1080
+            ]
+            formats.sort(key=lambda f: f['format_note'])
+            media_url = formats[-1]['url']
     except youtube_dl.utils.DownloadError:
         return 'failed', 400
 
