@@ -102,7 +102,7 @@ class TVStreams(module.Module):
 
         channel = CHANNELS[selection_id]
 
-        streamer.play(channel['stream'], self.stream_finished, channel['hls'])
+        streamer.play(channel['stream'], self.stream_finished)
 
     def on_exit(self):
         self.log('on_exit')

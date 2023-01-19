@@ -140,7 +140,7 @@ class TVNews(module.Module):
         if not selection_id:
             selection_id = self.selection_id
 
-        streamer.play(self.epg_data[selection_id]['video'], self.stream_finished, False, True)
+        streamer.play(self.epg_data[selection_id]['video'], self.stream_finished, True)
 
     def on_exit(self):
         self.log('on_exit')

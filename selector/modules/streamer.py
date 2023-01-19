@@ -51,7 +51,6 @@ class OutputProcessorThread(threading.Thread):
             self.callback()
 
 
-restreamer = None
 player = None
 output_thread = None
 
@@ -69,25 +68,20 @@ def is_playing():
     return player and player.poll() == None
 
 def stop():
-    global output_thread, player, restreamer
+    global output_thread, player
 
     GPIO.output(PIN_AIRCOOLING, GPIO.LOW)
-
-    if restreamer and restreamer.poll() == None:
-        os.killpg(os.getpgid(restreamer.pid), signal.SIGTERM)
-        restreamer.wait()
 
     if player and player.poll() == None:
         os.killpg(os.getpgid(player.pid), signal.SIGTERM)
         player.wait()
 
-    restreamer = None
     player = None
 
     output_thread = None
 
-def play(url, callback=None, hls=False, fit=False):
-    global output_thread, player, restreamer
+def play(url, callback=None, fit=False):
+    global output_thread, player
 
     print('streamer: play: ' + url)
     stop()
@@ -96,35 +90,15 @@ def play(url, callback=None, hls=False, fit=False):
 
     GPIO.output(PIN_AIRCOOLING, GPIO.HIGH)
 
-    if hls:
-        restreamer = subprocess.Popen([
-            'ffmpeg',
-            '-i', url,
-            '-c', 'copy',
-            '-f', 'mpegts',
-            'udp://localhost:1234'
-        ], preexec_fn=os.setsid)
-
-        url = 'udp://localhost:1234'
-
-    if fit:
-        player = subprocess.Popen([
-            'omxplayer',
-            '--timeout', '20',
-            '-b',
-            '-o', 'alsa:hw:1,0',
-            '--win', '165,540,1155,1080',
-            url
-        ], stderr=subprocess.PIPE, preexec_fn=os.setsid)
-    else:
-        player = subprocess.Popen([
-            'omxplayer',
-            '--timeout', '20',
-            '-b',
-            '-o', 'alsa:hw:1,0',
-            url
-        ], stderr=subprocess.PIPE, preexec_fn=os.setsid)
-        utils.ib_notify('infoscreen/overlay/visible', 'true')
+    player = subprocess.Popen([
+        'cvlc',
+        '--play-and-exit',
+        '--no-video-title',
+        '--aout=alsa',
+        '--alsa-audio-device', 'hw:CARD=Headphones',
+        url
+    ], stderr=subprocess.PIPE, preexec_fn=os.setsid)
+    utils.ib_notify('infoscreen/overlay/visible', 'true')
 
     output_thread = OutputProcessorThread(player, callback)
     output_thread.start()
