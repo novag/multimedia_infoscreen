@@ -34,7 +34,7 @@ CHANNELS = [
     {
         'name': 'ZDF HD',
         'short': 'zdf',
-        'stream': 'https://zdf-hls-15.akamaized.net/hls/live/2016498/de/high/master.m3u8',
+        'stream': 'https://zdf-hls-15.akamaized.net/hls/live/2016498/de/veryhigh/master.m3u8',
         'hls': True,
         'picon': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/ZDF_logo.svg/320px-ZDF_logo.svg.png'
     }
