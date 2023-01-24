@@ -37,6 +37,13 @@ CHANNELS = [
         'stream': 'https://zdf-hls-15.akamaized.net/hls/live/2016498/de/veryhigh/master.m3u8',
         'hls': True,
         'picon': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/ZDF_logo.svg/320px-ZDF_logo.svg.png'
+    },
+    {
+        'name': 'Bayerischer Rundfunk',
+        'short': 'br',
+        'stream': 'https://mcdn.br.de/br/fs/bfs_sued/hls/de/master.m3u8',
+        'hls': True,
+        'picon': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Logo_Bayerischer_Rundfunk.svg/320px-Logo_Bayerischer_Rundfunk.svg.png'
     }
 ]
 
