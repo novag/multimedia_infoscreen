@@ -9,7 +9,7 @@ multimedia: YouTube
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
-at your option) any later version.
+at your option any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -29,86 +29,107 @@ from . import module, registry, streamer, utils
 app = Flask(__name__)
 search_page = """<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>YouTube Home</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
-  <style>
-    html {
-      background-color: #000000;
-    }
-    body {
-      background-color: #000000;
-    }
-    .loginbar {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 500px;
-    }
-    input {
-      font-size: 40px;
-      font-family: "HelveticaNeue-Light", sans-serif;
-      font-weight: 600;
-      padding: 10px;
-      border-style: none;
-    }
-    .fa-youtube {
-      color: #FF0000;
-    }
-    .fa-check-circle {
-      color: #33ffd4;
-    }
-    .fa-times-circle {
-      color: #FF0000;
-    }
-    .fa-spinner{
-      color: #e56c27;
-      animation: rotation 1s infinite linear;
-    }
-    @keyframes rotation {
-      from {
-        transform: rotate(0deg);
+  <head>
+    <meta charset="UTF-8">
+    <title>YouTube Home</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+      html {
+        background-color: #000000;
       }
-      to {
-        transform: rotate(359deg);
-      }
-    }
-    button {
-      border-style: none;
-      background-color: #000000;
-    }
-  </style>
-</head>
-<body>
-  <div class="loginbar">
-    <input type="text" name="youtube_url" id="youtube_url" placeholder="YouTube URL">
-    <button class="fab fa-youtube" class="button" onclick="confirm_play()" style="font-size:100px;"></button>
-  </div>
-  <p id="check_id" style="text-align: center"></p>
 
-  <script>
-    function confirm_play() {
-      var xhttp = new XMLHttpRequest();
-      xhttp.onreadystatechange = function() {
-        if (this.readyState == 4) {
-          if (this.status == 200) {
-            document.getElementById('check_id').innerHTML = '<i class="far fa-check-circle" style="font-size: 100px;"></i>';
-          } else {
-            document.getElementById('check_id').innerHTML = '<i class="far fa-times-circle" style="font-size: 100px;"></i>';
-          }
-        } else {
-            document.getElementById('check_id').innerHTML = '<i class="fas fa-spinner" style="font-size: 100px;"></i>';
+      body {
+        background-color: #000000;
+      }
+
+      .input-text {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+      }
+      
+      input {
+        font-size: 40px;
+        font-family: "HelveticaNeue-Light", sans-serif;
+        font-weight: 600;
+        padding: 10px;
+        border-style: none;
+      }
+
+      .button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+      }
+
+      .fa-youtube {
+        color: #FF0000;
+        border-style: none;
+        background-color: #000000;
+      }
+
+      .fa-check-circle {
+        color: #33ffd4;
+      }
+
+      .fa-times-circle {
+        color: #FF0000;
+      }
+
+      .fa-spinner {
+        color: #e56c27;
+        animation: rotation 1s infinite linear;
+      }
+
+      @keyframes rotation {
+        from {
+          transform: rotate(0deg);
         }
-      };
-      xhttp.open('POST', '/data', true);
-      xhttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-      var data = 'youtube_url=' + encodeURIComponent(document.getElementById('youtube_url').value);
-      xhttp.send(data);
-    }
-  </script>
-</body>
 
+        to {
+          transform: rotate(359deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="input-text">
+      <input type="text" name="youtube_url" id="youtube_url" placeholder="YouTube URL">
+    </div>
+    <div class="input-text">
+      <input type="text" name="start_time" id="start_time" placeholder="Start time mm:ss">
+    </div>
+    <div class="button">
+      <button class="fab fa-youtube" onclick="play()" style="font-size:100px;"></button>
+    </div>
+    <p id="check_icon" style="text-align: center"></p>
+    <script>
+      function play() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4) {
+            if (this.status == 200) {
+              document.getElementById('check_icon').innerHTML = '<div class="far fa-check-circle" style="font-size: 100px;"> </div>';
+            } else {
+              document.getElementById('check_icon').innerHTML = '<div class="far fa-times-circle" style="font-size: 100px;"> </div>';
+            }
+          } else {
+            document.getElementById('check_icon').innerHTML = '<div class="fas fa-spinner" style="font-size: 100px;"> </div>';
+          }
+        };
+        xhttp.open('POST', '/data', true);
+        xhttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        var time_splitted = document.getElementById('start_time').value.split(':');
+        var min_in_sec = time_splitted[0] * 60;
+        var sec = time_splitted[1];
+        var time = min_in_sec + sec;
+        var data = 'youtube_url=' + encodeURIComponent(document.getElementById('youtube_url').value) + '?t=' + time;
+        xhttp.send(data);
+      }
+    </script>
+  </body>
 </html>"""
 
 
