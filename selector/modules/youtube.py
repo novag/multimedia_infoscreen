@@ -125,7 +125,9 @@ search_page = """<!DOCTYPE html>
         var min_in_sec = time_splitted[0] * 60;
         var sec = time_splitted[1];
         var time = min_in_sec + sec;
-        var data = 'youtube_url=' + encodeURIComponent(document.getElementById('youtube_url').value) + '?t=' + time;
+        time = 'start_time=' + time;
+        var data = 'youtube_url=' + encodeURIComponent(document.getElementById('youtube_url').value);
+        xhttp.send(time);
         xhttp.send(data);
       }
     </script>
@@ -146,6 +148,7 @@ def index():
 @app.route('/data', methods=["POST"])
 def data():
     youtube_url = request.form['youtube_url']
+    start_time = request.form['start_time']
 
     ydl = youtube_dl.YoutubeDL()
     try:
@@ -156,7 +159,7 @@ def data():
                 if f['vcodec'].startswith('avc1') and int(f['format_note'].replace('p', '')) <= 1080
             ]
             formats.sort(key=lambda f: f['format_note'])
-            media_url = formats[-1]['url']
+            media_url = formats[-1]['url'] + '?t=' + start_time
     except youtube_dl.utils.DownloadError:
         return 'failed', 400
 
