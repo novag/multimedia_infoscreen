@@ -80,10 +80,10 @@ def stop():
 
     output_thread = None
 
-def play(url, callback=None, fit=False):
+def play(url, callback=None, fit=False, start_time=0):
     global output_thread, player
 
-    print('streamer: play: ' + url)
+    print('streamer: play: ' + url + '?t=' + start_time)
     stop()
 
     stop_radio()
@@ -96,6 +96,7 @@ def play(url, callback=None, fit=False):
         '--no-video-title',
         '--aout=alsa',
         '--alsa-audio-device', 'hw:CARD=Headphones',
+        '--start-time', start_time,
         url
     ], stderr=subprocess.PIPE, preexec_fn=os.setsid)
     utils.ib_notify('infoscreen/overlay/visible', 'true')

@@ -126,8 +126,7 @@ search_page = """<!DOCTYPE html>
         var sec = time_splitted[1];
         var time = min_in_sec + sec;
         time = 'start_time=' + time;
-        var data = 'youtube_url=' + encodeURIComponent(document.getElementById('youtube_url').value);
-        xhttp.send(time);
+        var data = 'youtube_url=' + encodeURIComponent(document.getElementById('youtube_url').value) + '&start_time=' + time;
         xhttp.send(data);
       }
     </script>
@@ -159,12 +158,12 @@ def data():
                 if f['vcodec'].startswith('avc1') and int(f['format_note'].replace('p', '')) <= 1080
             ]
             formats.sort(key=lambda f: f['format_note'])
-            media_url = formats[-1]['url'] + '?t=' + start_time
+            media_url = formats[-1]['url']
     except youtube_dl.utils.DownloadError:
         return 'failed', 400
 
     registry.module_self_activate(current_app.config["yt_module"])
-    streamer.play(media_url)
+    streamer.play(media_url, start_time=start_time)
 
     return 'success'
 
