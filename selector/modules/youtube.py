@@ -124,7 +124,7 @@ search_page = """<!DOCTYPE html>
         var time_splitted = document.getElementById('start_time').value.split(':');
         var min_in_sec = time_splitted[0] * 60;
         var sec = time_splitted[1];
-        var time = min_in_sec + sec;
+        var time = number("min_in_sec") + number("sec");
         time = 'start_time=' + time;
         var data = 'youtube_url=' + encodeURIComponent(document.getElementById('youtube_url').value) + '&start_time=' + time;
         xhttp.send(data);
