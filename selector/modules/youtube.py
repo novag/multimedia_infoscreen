@@ -125,7 +125,6 @@ search_page = """<!DOCTYPE html>
         var min_in_sec = time_splitted[0] * 60;
         var sec = time_splitted[1];
         var time = parseInt(min_in_sec) + parseInt(sec);
-        time = 'start_time=' + time;
         var data = 'youtube_url=' + encodeURIComponent(document.getElementById('youtube_url').value) + '&start_time=' + time;
         xhttp.send(data);
       }
