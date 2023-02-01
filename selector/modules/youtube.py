@@ -9,7 +9,7 @@ multimedia: YouTube
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
-at your option any later version.
+(at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -107,8 +107,8 @@ search_page = """<!DOCTYPE html>
     <p id="check_icon" style="text-align: center"></p>
     <script>
       function play() {
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
           if (this.readyState == 4) {
             if (this.status == 200) {
               document.getElementById('check_icon').innerHTML = '<div class="far fa-check-circle" style="font-size: 100px;"> </div>';
@@ -119,14 +119,13 @@ search_page = """<!DOCTYPE html>
             document.getElementById('check_icon').innerHTML = '<div class="fas fa-spinner" style="font-size: 100px;"> </div>';
           }
         };
-        xhttp.open('POST', '/data', true);
-        xhttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        var time_splitted = document.getElementById('start_time').value.split(':');
-        var min_in_sec = time_splitted[0] * 60;
-        var sec = time_splitted[1];
-        var time = parseInt(min_in_sec) + parseInt(sec);
-        var data = 'youtube_url=' + encodeURIComponent(document.getElementById('youtube_url').value) + '&start_time=' + time;
-        xhttp.send(data);
+        xhr.open('POST', '/data', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        var youtubeUrl = document.getElementById('youtube_url').value;
+        var timeSplit = document.getElementById('start_time').value.split(':');
+        var startTime = parseInt(timeSplit[0]) * 60 + parseInt(timeSplit[1]);
+        var data = 'youtube_url=' + encodeURIComponent(youtubeUrl) + '&start_time=' + startTime;
+        xhr.send(data);
       }
     </script>
   </body>
@@ -162,7 +161,7 @@ def data():
         return 'failed', 400
 
     registry.module_self_activate(current_app.config["yt_module"])
-    streamer.play(media_url, start_time=start_time)
+    streamer.play(url=media_url, start_time=start_time)
 
     return 'success'
 

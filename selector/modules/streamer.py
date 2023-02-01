@@ -83,7 +83,7 @@ def stop():
 def play(url, callback=None, fit=False, start_time=0):
     global output_thread, player
 
-    print('streamer: play: ' + url + '?t=' + start_time)
+    print(f'streamer: play: url={url}, start_time={start_time}')
     stop()
 
     stop_radio()
